@@ -18,14 +18,13 @@ endfunction()
 # Check if tests are enabled
 if(OPTION_BUILD_TESTS)
 
-    #set(GOOGLETEST_DIR "${VENDOR_SOURCE_DIR}/gtest")
-    #set(GOOGLEMOCK_DIR "${VENDOR_SOURCE_DIR}/gmock")
-    #add_subdirectory(${GOOGLEMOCK_DIR} "${VENDOR_BINARY_DIR}/gmock" EXCLUDE_FROM_ALL)
+    set(GOOGLETEST_DIR "${VENDOR_SOURCE_DIR}/googletest")
+    add_subdirectory(${GOOGLETEST_DIR} "${VENDOR_BINARY_DIR}/googletest" EXCLUDE_FROM_ALL)
 
     # Include gmock and gtest
     include_directories(
-    #    "${GOOGLETEST_DIR}/include"
-    #    "${GOOGLEMOCK_DIR}/include"
+        "${GOOGLETEST_DIR}/googletest/include"
+        "${GOOGLETEST_DIR}/googlemock/include"
     )
 
     # Target 'test'

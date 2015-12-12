@@ -23,6 +23,7 @@ include_directories(
 # Libraries
 
 set(libs
+    glog
     # e.g., ${THIRDPARTY_LIBRARY}
 )
 

@@ -14,7 +14,7 @@ include_directories(
 # Libraries
 
 set(libs
-#    gmock
+    gmock
     library
 )
 

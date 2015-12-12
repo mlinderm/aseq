@@ -9,7 +9,7 @@
 #define ASEQ_VERSION_MINOR       "1"
 #define ASEQ_VERSION_PATCH       "0"
 
-#define ASEQ_GIT_SHA1            ""
-#define ASEQ_GIT_REV             ""
+#define ASEQ_GIT_SHA1            "4106880deb1b56a7cd132d688fa68a0e7c2bc3fe"
+#define ASEQ_GIT_REV             "4106880deb1b"
 
 #define ASEQ_VERSION "0.1.0"
