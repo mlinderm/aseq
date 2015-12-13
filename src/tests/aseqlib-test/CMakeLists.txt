@@ -30,6 +30,8 @@ endif()
 
 set(sources
     main.cpp
+    util/exception.cpp
+    io/line_reader.cpp
 )
 
 

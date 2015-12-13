@@ -39,10 +39,11 @@ endif()
 
 # Sources
 
-set(include_path "${CMAKE_CURRENT_SOURCE_DIR}/include/aseq")
+set(include_path "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(source_path "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(api_includes
+    include/aseq/util/exception.hpp
 )
 
 set(sources
@@ -56,7 +57,7 @@ source_group_by_path(${source_path} "\\\\.cpp$|\\\\.c$|\\\\.h$|\\\\.hpp$" ${sour
 
 
 # Build library
-add_library(${target} ${api_includes} ${sources})
+add_library(${target} ${api_includes} ${sources} src/io/line_reader.cpp include/aseq/io/line.hpp)
 
 target_link_libraries(${target} ${Boost_LIBRARIES} ${libs})
 
