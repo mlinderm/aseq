@@ -20,9 +20,10 @@ class path;
 namespace aseq {
 namespace io {
 
+typedef boost::iterator_range<const char*> Line;
+
 class ASCIILineReaderInterface {
  public:
-  typedef boost::iterator_range<const char*> Line;
   typedef std::unique_ptr<ASCIILineReaderInterface> FactoryResult;
   typedef boost::optional<Line> NextResult;
 
@@ -37,7 +38,6 @@ class ASCIILineReaderInterface {
 
 class ASCIILineWriterInterface {
  public:
-  typedef boost::iterator_range<const char*> Line;
   typedef std::unique_ptr<ASCIILineWriterInterface> FactoryResult;
 
  public:

@@ -32,6 +32,9 @@ set(sources
     main.cpp
     util/exception.cpp
     io/line_reader.cpp
+    io/line_writer.cpp
+    io/variant_source.cpp
+    io/variant_sink.cpp
 )
 
 

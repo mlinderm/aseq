@@ -44,9 +44,21 @@ set(source_path "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 set(api_includes
     include/aseq/util/exception.hpp
+    include/aseq/io/line.hpp
+    include/aseq/io/variant.hpp
+    include/aseq/io/file_format.hpp
+    include/aseq/io/vcf.hpp
+    include/aseq/model/variant_context.hpp
 )
 
 set(sources
+    src/io/line_reader.cpp
+    src/io/line_writer.cpp
+    src/io/variant_source.cpp
+    src/io/variant_sink.cpp
+    src/io/vcf.cpp
+    src/io/vcf_source.cpp
+    src/io/vcf_sink.cpp
 )
 
 # Group src files
@@ -57,7 +69,7 @@ source_group_by_path(${source_path} "\\\\.cpp$|\\\\.c$|\\\\.h$|\\\\.hpp$" ${sour
 
 
 # Build library
-add_library(${target} ${api_includes} ${sources} src/io/line_reader.cpp include/aseq/io/line.hpp)
+add_library(${target} ${api_includes} ${sources} )
 
 target_link_libraries(${target} ${Boost_LIBRARIES} ${libs})
 
