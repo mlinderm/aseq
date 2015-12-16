@@ -24,6 +24,7 @@ include_directories(
 
 set(libs
     glog
+    cppformat
     # e.g., ${THIRDPARTY_LIBRARY}
 )
 

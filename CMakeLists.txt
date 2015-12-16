@@ -59,6 +59,7 @@ set(IDE_FOLDER "")
 include(cmake/Custom.cmake)
 include(cmake/GitRevision.cmake)
 include(cmake/FindGlog.cmake)
+include(cmake/Findcppformat.cmake)
 
 # Platform and architecture setup
 

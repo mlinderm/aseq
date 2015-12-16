@@ -7,6 +7,7 @@
 
 #include <boost/filesystem.hpp>
 #include <glog/logging.h>
+#include <cppformat/format.h>
 
 #include "aseq/util/exception.hpp"
 #include "aseq/io/line.hpp"
@@ -43,7 +44,7 @@ ASCIILineWriterInterface::FactoryResult ASCIILineWriterInterface::MakeLineWriter
 
 ASCIILineWriterInterface::FactoryResult ASCIILineWriterInterface::MakeLineWriter(
     const fs::path &path) {
-  LOG_IF(INFO, fs::exists(path)) << "Overwriting existing file";
+  LOG_IF(INFO, fs::exists(path)) << fmt::format("Overwriting existing file {}", path.native());
 
   return std::make_unique<impl::ASCIIStreamLineWriter>(path);
 }

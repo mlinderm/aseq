@@ -4,6 +4,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 include_directories(${GLOG_INCLUDE_DIR})
+include_directories(${cppformat_INCLUDE_DIR})
 
 # Generate meta-header
 configure_file(aseq-version.h.in ${CMAKE_CURRENT_BINARY_DIR}/aseq-version.h)
