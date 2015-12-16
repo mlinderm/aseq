@@ -4,11 +4,13 @@ message(STATUS "App ${target}")
 
 
 # External libraries
-
+set(DOCOPT_DIR "${VENDOR_SOURCE_DIR}/docopt")
+add_subdirectory(${DOCOPT_DIR} "${VENDOR_BINARY_DIR}/docopt")
 
 # Includes
 
 include_directories(
+  "${DOCOPT_DIR}"
 )
 
 include_directories(
@@ -20,7 +22,9 @@ include_directories(
 # Libraries
 
 set(libs
-    library
+  glog
+  docopt
+  library
 )
 
 
