@@ -35,11 +35,12 @@ set(sources
     io/line_writer.cpp
     io/variant_source.cpp
     io/variant_sink.cpp
+    model/allele.cpp
 )
 
 
 # Build executable
-add_executable(${target} ${sources})
+add_executable(${target} ${sources} model/variant_context.cpp)
 
 target_link_libraries(${target} ${libs})
 target_compile_options(${target} PRIVATE ${DEFAULT_COMPILE_FLAGS})
