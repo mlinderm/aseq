@@ -40,7 +40,7 @@ set(sources
 
 
 # Build executable
-add_executable(${target} ${sources} model/variant_context.cpp)
+add_executable(${target} ${sources} model/variant_context.cpp io/vcf_source.cpp)
 
 target_link_libraries(${target} ${libs})
 target_compile_options(${target} PRIVATE ${DEFAULT_COMPILE_FLAGS})

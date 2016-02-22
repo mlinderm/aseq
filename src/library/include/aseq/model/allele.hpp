@@ -14,25 +14,23 @@ namespace model {
 struct allele_tag {};
 
 class Allele : public util::flyweight_string_no_track<allele_tag> {
-  typedef util::flyweight_string_no_track<allele_tag> base_type;
+  typedef util::flyweight_string_no_track<allele_tag> BaseType;
 
  public:
-  typedef typename base_type::initializer initializer;
+  typedef typename BaseType::initializer initializer;
 
   static const Allele A, G, C, T, N;
   static const Allele MISSING;
   static const Allele NON_REF;
 
-  Allele() : base_type(MISSING) {}
-  Allele(const char* bases) : base_type(bases) {}
-  Allele(const std::string& bases) : base_type(bases) {}
-  template <class I>
-  Allele(const boost::iterator_range<I>& range)
-      : base_type(range.begin(), range.end()) {}
-  template <typename I>
-  Allele(I f, I l)
-      : base_type(f, l) {}
-  Allele(const Allele& allele) : base_type(allele) {}
+  using BaseType::BaseType;
+
+  Allele() : BaseType(MISSING) {}
+  Allele(const Allele& allele) = default;
+  Allele(Allele&& allele) = default;
+
+  Allele& operator=(const Allele& allele) = default;
+  Allele& operator=(Allele&& allele) = default;
 
   bool IsSymbolic() const;
 };

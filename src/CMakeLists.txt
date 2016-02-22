@@ -1,5 +1,5 @@
 # External libraries
-find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
+find_package(Boost 1.59.0 REQUIRED COMPONENTS system filesystem)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 

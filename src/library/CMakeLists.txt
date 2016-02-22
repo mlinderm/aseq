@@ -50,10 +50,13 @@ set(api_includes
     include/aseq/io/variant.hpp
     include/aseq/io/file_format.hpp
     include/aseq/io/vcf.hpp
+    include/aseq/io/reference.hpp
     include/aseq/model/contig.hpp
     include/aseq/model/allele.hpp
     include/aseq/model/variant_context.hpp
     include/aseq/algorithm/variant.hpp
+    include/aseq/util/any.hpp
+    include/aseq/util/attributes.hpp
 )
 
 set(sources
@@ -64,6 +67,7 @@ set(sources
     src/io/vcf.cpp
     src/io/vcf_source.cpp
     src/io/vcf_sink.cpp
+    src/io/reference_source.cpp
     src/model/allele.cpp
     src/model/variant_context.cpp
 )

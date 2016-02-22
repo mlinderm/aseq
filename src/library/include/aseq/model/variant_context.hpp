@@ -4,52 +4,65 @@
 
 #pragma once
 
+#include <vector>
+#include <iosfwd>
+
+#include <boost/optional.hpp>
+
 #include "aseq/util/exception.hpp"
 #include "aseq/model/contig.hpp"
 #include "aseq/model/allele.hpp"
+#include "aseq/util/attributes.hpp"
 
 namespace aseq {
 namespace model {
 
+namespace impl {
+struct VariantContextData;
+}  // namespace impl
+
 class CompareVariants;
 
-class VariantContext {
+class VariantContext : public util::HasAttributes {
  public:
-  VariantContext(const Contig &contig, int64_t pos, const Allele &ref);
-  VariantContext(const Contig &contig, int64_t pos, const Allele &ref, const Allele &alt);
-  VariantContext(const Contig &contig, int64_t pos, const Allele &ref,
-                 std::initializer_list<Allele> alts);
+  typedef int64_t Pos;
+  typedef std::vector<Allele> Alleles;
+  typedef std::vector<std::string> IDs;
+  typedef float Qual;
+  typedef util::Attributes::key_type Filter;
+  typedef std::vector<Filter> Filters;
 
-  template <typename Iterator>
-  VariantContext(const Contig &contig, int64_t pos, const Allele &ref, Iterator alt_first,
-                 Iterator alt_last);
+ public:
+  VariantContext(impl::VariantContextData &&data);
+  VariantContext(const Contig &contig, Pos pos, const Allele &ref);
+  VariantContext(const Contig &contig, Pos pos, const Allele &ref, const Allele &alt);
+  VariantContext(const Contig &contig, Pos pos, const Allele &ref,
+                 std::initializer_list<Allele> alts);
 
   const Contig &contig() const { return contig_; }
 
   int64_t pos() const { return pos_; }
   int64_t end() const { return end_; }
 
- private:
-  typedef std::vector<Allele> Alts;
+  const Allele &ref() const { return ref_; }
 
+  friend std::ostream &operator<<(std::ostream &, const VariantContext &);
+
+ private:
   Contig contig_;
-  int64_t pos_, end_;
+  Pos pos_, end_;
   Allele ref_;
-  Alts alts_;
+  Alleles alts_;
+
+  // Context Fields
+  IDs ids_;
+  boost::optional<Qual> qual_;
+  Filters filters_;
 
   friend class CompareVariants;
 };
 
-template <typename Iterator>
-VariantContext::VariantContext(const Contig &contig, int64_t pos, const Allele &ref,
-                               Iterator alt_first, Iterator alt_last)
-    : contig_(contig), pos_(pos), ref_(ref), alts_(alt_first, alt_last) {
-  if (std::any_of(alts_.begin(), alts_.end(), [](const Allele &a) { return a.IsSymbolic(); })) {
-    throw util::invalid_argument()
-        << util::error_message("VariantContext with symbolic allele requires explicit END");
-  }
-  end_ = pos_ + ref_.size() - 1;  // Recall coordinates are 1-indexed
-}
+std::ostream &operator<<(std::ostream &, const VariantContext &);
 
 class CompareVariants {
  public:
@@ -59,5 +72,21 @@ class CompareVariants {
 
   result_type operator()(const VariantContext &left, const VariantContext &right) const;
 };
+
+namespace impl {
+struct VariantContextData {
+  VariantContextData() : pos_(0), end_(0), ref_(Allele::MISSING) {}
+
+  Contig contig_;
+  VariantContext::Pos pos_, end_;
+  Allele ref_;
+  VariantContext::Alleles alts_;
+  VariantContext::IDs ids_;
+  boost::optional<VariantContext::Qual> qual_;
+  VariantContext::Filters filters_;
+  util::Attributes attrs_;
+};
 }
-}
+
+}  // namespace model
+}  // namespace aseq

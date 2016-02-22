@@ -25,15 +25,17 @@ class flyweight_string_no_track {
   typedef typename flyweight_type::initializer initializer;
 
   flyweight_string_no_track() {}
+  flyweight_string_no_track(char c) : value_(std::to_string(c)) {}
   flyweight_string_no_track(const std::string& s) : value_(s) {}
   flyweight_string_no_track(const char* s) : value_(s) {}
   template <typename I>
   flyweight_string_no_track(const boost::iterator_range<I>& r)
       : value_(r.begin(), r.end()) {}
   template <typename I>
-  flyweight_string_no_track(I f, I l)
-      : value_(f, l) {}
+  flyweight_string_no_track(I begin, I end)
+      : value_(begin, end) {}
   flyweight_string_no_track(const flyweight_string_no_track&) = default;
+  flyweight_string_no_track(flyweight_string_no_track&&) = default;
 
   operator const std::string&() const { return value_.get(); }
   const std::string& get() const { return value_.get(); }
@@ -61,6 +63,14 @@ class flyweight_string_no_track {
   }
 
   /* Operators */
+  flyweight_string_no_track& operator=(const flyweight_string_no_track& f) {
+    value_ = f.value_;
+    return *this;
+  }
+  flyweight_string_no_track& operator=(flyweight_string_no_track&& f) {
+    value_ = f.value_;
+    return *this;
+  }
   bool operator==(const flyweight_string_no_track& f) const { return value_ == f.value_; }
   bool operator!=(const flyweight_string_no_track& f) const { return value_ != f.value_; }
   bool operator<(const flyweight_string_no_track& f) const { return value_ < f.value_; }
@@ -73,8 +83,8 @@ template <class Tag>
 std::ostream& operator<<(std::ostream& ostream, const flyweight_string_no_track<Tag>& flyweight) {
   return (ostream << flyweight.get());
 }
-} // namespace util
-} // namespace aseq
+}  // namespace util
+}  // namespace aseq
 
 namespace std {
 

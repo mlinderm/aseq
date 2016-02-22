@@ -8,6 +8,7 @@
 #include <boost/filesystem.hpp>
 
 #include "aseq/io/variant.hpp"
+#include "aseq/io/vcf.hpp"
 
 namespace fs = boost::filesystem;
 using namespace aseq::io;
@@ -32,6 +33,14 @@ TEST_P(VCFSitesOnlySourceTest, DetectsFileFormat) {
   auto source = VariantSourceInterface::MakeVariantSource(file_);
   ASSERT_TRUE(source);
   ASSERT_EQ(FileFormat::VCF4_2, source->file_format());
+
+  auto* vcf_source = dynamic_cast<VCFSource*>(source.get());
+  auto& header = vcf_source->header();
+
+  EXPECT_TRUE(header.FILTER_HasField("PASS"));
+
+  EXPECT_EQ(3, boost::size(header.INFO_Values()));
+  ASSERT_TRUE(header.INFO_HasField("AN"));
 }
 
 INSTANTIATE_TEST_CASE_P(VCFSitesOnly, VCFSitesOnlySourceTest, ::testing::Values("sites_only.vcf"));

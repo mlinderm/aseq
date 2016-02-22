@@ -12,7 +12,7 @@
 namespace aseq {
 namespace util {
 
-// Common Exception Data
+// Common Exception base_type
 typedef boost::error_info<struct error_tag_msg, std::string> error_message;
 typedef boost::error_info<struct error_tag_col_number, size_t> error_column_number;
 typedef boost::error_info<struct error_tag_line_number, size_t> error_line_number;
