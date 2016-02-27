@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.1)
 
 option(WITH_TESTS           "Build tests."       OFF)
 option(WITH_EXAMPLE         "Build example."     OFF)
-option(WITH_STATIC          "Build static libs." ON)
 
 project(docopt.cpp)
 include_directories("${PROJECT_SOURCE_DIR}")
@@ -32,11 +31,7 @@ set(DOCOPT_SRC
 		docopt_util.h
 		docopt_value.h
 		)
-if(WITH_STATIC)
-	add_library(docopt_s STATIC ${DOCOPT_SRC})
-	target_include_directories(docopt_s PUBLIC "${PROJECT_SOURCE_DIR}")
-endif()
-add_library(docopt SHARED ${DOCOPT_SRC})
+add_library(docopt STATIC ${DOCOPT_SRC})
 target_include_directories(docopt PUBLIC "${PROJECT_SOURCE_DIR}")
 
 ########################################################################
@@ -69,11 +64,6 @@ endif()
 INSTALL(TARGETS
 		docopt
 		DESTINATION lib)
-if(WITH_STATIC)
-	INSTALL(TARGETS
-			docopt_s
-			DESTINATION lib)
-endif()
 INSTALL(FILES
 		docopt.h
 		docopt_private.h
