@@ -23,19 +23,19 @@ std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt
       result = ref.Sequence(cxt.contig(), cxt.pos() - flank, cxt.pos() - 1);
   }
   // 2. Replacement
-  const auto& alt = cxt.alt(0);
-  if (!alt.IsSymbolic()) {
-    result.append(alt);
+  const auto& alt_allele = cxt.alt(0);
+  if (!alt_allele.IsSymbolic()) {
+    result.append(alt_allele);
   } else if (cxt.HasAttribute(io::VCFHeader::INFO::SVTYPE)) {
     const auto& type = cxt.GetAttribute<util::Attributes::String>(io::VCFHeader::INFO::SVTYPE);
     if (type == "DEL") {
       // For symbolic deletions we don't write out any alternate bases, just the padding reference
       // base
-      const auto& ref = cxt.ref();
-      if (ref.size() != 1) {
+      const auto& ref_allele = cxt.ref();
+      if (ref_allele.size() != 1) {
         throw util::invalid_argument() << util::error_message("Consensus assumes single REF base");
       }
-      result.append(ref);
+      result.append(ref_allele);
     } else {
       throw util::invalid_argument()
           << util::error_message("Unsupported symbolic variant for Consensus");
