@@ -6,7 +6,7 @@ if (HAVE_OPEN)
   set(FMT_SOURCES ${FMT_SOURCES} posix.cc)
 endif ()
 
-add_library(cppformat ${FMT_SOURCES} ${FMT_HEADERS})
+add_library(cppformat STATIC ${FMT_SOURCES} ${FMT_HEADERS})
 
 # Starting with cmake 3.1 the CXX_STANDARD property can be used instead.
 target_compile_options(cppformat PUBLIC ${CPP11_FLAG})
