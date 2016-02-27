@@ -37,10 +37,11 @@ TEST_P(VCFSitesOnlySourceTest, DetectsFileFormat) {
   auto* vcf_source = dynamic_cast<VCFSource*>(source.get());
   auto& header = vcf_source->header();
 
-  EXPECT_TRUE(header.FILTER_HasField("PASS"));
+  EXPECT_TRUE(header.FILTER_HasField(VCFHeader::FILTER::PASS));
 
   EXPECT_EQ(3, boost::size(header.INFO_Values()));
-  ASSERT_TRUE(header.INFO_HasField("AN"));
+  ASSERT_TRUE(header.INFO_HasField(VCFHeader::INFO::AN));
 }
 
-INSTANTIATE_TEST_CASE_P(VCFSitesOnly, VCFSitesOnlySourceTest, ::testing::Values("sites_only.vcf"));
+INSTANTIATE_TEST_CASE_P(VCFSitesOnly, VCFSitesOnlySourceTest,
+                        ::testing::Values("sites_only.vcf", "sites_only.vcf.gz"));

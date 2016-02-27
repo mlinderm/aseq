@@ -4,11 +4,14 @@
 
 #pragma once
 
-#include "aseq/feature/variant_context.hpp"
+#include <string>
+
+#include "aseq/io/reference.hpp"
+#include "aseq/model/variant_context.hpp"
 
 namespace aseq {
 namespace algorithm {
 
-
+std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt, uint64_t flank);
 }
 }

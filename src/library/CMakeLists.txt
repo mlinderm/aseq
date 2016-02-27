@@ -4,6 +4,8 @@ message(STATUS "Lib ${target}")
 
 
 # External libraries
+set(HTSLIB_DIR "${VENDOR_SOURCE_DIR}/htslib")
+add_subdirectory(${HTSLIB_DIR} "${VENDOR_BINARY_DIR}/htslib")
 
 # e.g., find_package(THIRDPARTY REQUIRED)
 
@@ -11,6 +13,7 @@ message(STATUS "Lib ${target}")
 # Includes
 
 include_directories(
+    ${HTSLIB_DIR}
     # e.g., ${TRDP_INCLUDE_DIR}
 )
 
@@ -25,6 +28,7 @@ include_directories(
 set(libs
     glog
     cppformat
+    htslib
     # e.g., ${THIRDPARTY_LIBRARY}
 )
 
@@ -68,8 +72,10 @@ set(sources
     src/io/vcf_source.cpp
     src/io/vcf_sink.cpp
     src/io/reference_source.cpp
+    include/aseq/io/reference-mock.hpp
     src/model/allele.cpp
     src/model/variant_context.cpp
+    src/algorithm/variant_consensus.cpp
 )
 
 # Group src files

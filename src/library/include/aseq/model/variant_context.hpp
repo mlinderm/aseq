@@ -41,10 +41,16 @@ class VariantContext : public util::HasAttributes {
 
   const Contig &contig() const { return contig_; }
 
-  int64_t pos() const { return pos_; }
-  int64_t end() const { return end_; }
+  Pos pos() const { return pos_; }
+  Pos end() const { return end_; }
+  uint64_t size() const { return end_ - pos_ + 1; }
 
   const Allele &ref() const { return ref_; }
+  const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
+
+  bool IsMonoallelic() const { return alts_.empty(); }
+  bool IsBiallelic() const { return alts_.size() == 1; }
+  bool IsMultiAllelic() const { return alts_.size() > 1; }
 
   friend std::ostream &operator<<(std::ostream &, const VariantContext &);
 

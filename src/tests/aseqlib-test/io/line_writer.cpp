@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
+#include <cppformat/format.h>
 
 #include "aseq/io/line.hpp"
 
@@ -17,7 +18,7 @@ TEST(ASCIIStreamWriterTest, WritesLinesToASCIIStream) {
   ASSERT_TRUE(writer);
 
   for (int i = 1; i <= 3; i++) {
-    writer->WriteLine(std::string("line") + std::to_string(i));
+    writer->WriteLine(fmt::format("line{}", i));
   }
   EXPECT_EQ("line1\nline2\nline3\n", sink_stream.str());
 }
