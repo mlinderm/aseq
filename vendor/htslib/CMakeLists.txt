@@ -72,7 +72,7 @@ include_directories(
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
 add_library(${target} STATIC ${api_includes} ${sources})
-
+target_compile_options(${target} PUBLIC -fPIC)
 target_link_libraries(${target} ${ZLIB_LIBRARIES} )
 set_target_properties(${target}
     PROPERTIES
