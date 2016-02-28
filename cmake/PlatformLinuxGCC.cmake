@@ -6,6 +6,10 @@ message(STATUS "Configuring for platform Linux/GCC.")
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
     OUTPUT_VARIABLE GCC_VERSION)
 
+if(GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
+endif()
+
 if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 elseif(GCC_VERSION VERSION_EQUAL 4.6)
@@ -29,31 +33,18 @@ set(DEFAULT_COMPILE_DEFS_RELEASE
     NDEBUG                    # Release build
 )
 
-if (OPTION_ERRORS_AS_EXCEPTION)
-    set(EXCEPTION_FLAG "-fexceptions")
-else()
-    set(EXCEPTION_FLAG "-fno-exceptions")
-endif()
-
 set(LINUX_COMPILE_FLAGS
-      
-      ${EXCEPTION_FLAG}
       -pthread      # -> use pthread library
     # -no-rtti      # -> disable c++ rtti
       -pipe         # -> use pipes
       -Wall         # -> 
       -Wextra       # -> 
-      -Werror       # ->
       -fPIC         # -> use position independent code
-      
       -Wreturn-type 
       -Wfloat-equal 
       -Wshadow      # -> e.g. when a parameter is named like a member, too many warnings, disabled for now
       -Wcast-align 
       -Wconversion
-
-    # -Werror=return-type -> missing returns in functions and methods are handled as errors which stops the compilation
-    
 )
 
 set(DEFAULT_COMPILE_FLAGS
