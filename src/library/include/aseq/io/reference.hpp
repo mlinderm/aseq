@@ -5,7 +5,7 @@
 #pragma once
 
 #include <memory>
-#include <aseq/model/contig.hpp>
+#include "aseq/model/region.hpp"
 
 // htslib
 typedef struct __faidx_t faidx_t;
@@ -26,8 +26,7 @@ class ReferenceSource {
   ReferenceSource(const std::string&);
   virtual ~ReferenceSource() = default;
 
-  // TODO: Create shared region types
-  virtual std::string Sequence(const model::Contig& ctg, int64_t pos, int64_t end);
+  virtual std::string Sequence(const model::Contig& ctg, model::Pos pos, model::Pos end);
 
  protected:
   ReferenceSource();

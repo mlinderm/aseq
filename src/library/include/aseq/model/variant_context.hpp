@@ -10,9 +10,9 @@
 #include <boost/optional.hpp>
 
 #include "aseq/util/exception.hpp"
-#include "aseq/model/contig.hpp"
 #include "aseq/model/allele.hpp"
 #include "aseq/util/attributes.hpp"
+#include "aseq/model/region.hpp"
 
 namespace aseq {
 namespace model {
@@ -23,9 +23,8 @@ struct VariantContextData;
 
 class CompareVariants;
 
-class VariantContext : public util::HasAttributes {
+class VariantContext : public util::HasAttributes, public HasRegion {
  public:
-  typedef int64_t Pos;
   typedef std::vector<Allele> Alleles;
   typedef std::vector<std::string> IDs;
   typedef float Qual;
@@ -39,11 +38,6 @@ class VariantContext : public util::HasAttributes {
   VariantContext(const Contig &contig, Pos pos, const Allele &ref,
                  std::initializer_list<Allele> alts);
 
-  const Contig &contig() const { return contig_; }
-
-  Pos pos() const { return pos_; }
-  Pos end() const { return end_; }
-  uint64_t size() const { return end_ - pos_ + 1; }
 
   const Allele &ref() const { return ref_; }
   const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
@@ -55,8 +49,6 @@ class VariantContext : public util::HasAttributes {
   friend std::ostream &operator<<(std::ostream &, const VariantContext &);
 
  private:
-  Contig contig_;
-  Pos pos_, end_;
   Allele ref_;
   Alleles alts_;
 
@@ -84,7 +76,7 @@ struct VariantContextData {
   VariantContextData() : pos_(0), end_(0), ref_(Allele::MISSING) {}
 
   Contig contig_;
-  VariantContext::Pos pos_, end_;
+  Pos pos_, end_;
   Allele ref_;
   VariantContext::Alleles alts_;
   VariantContext::IDs ids_;

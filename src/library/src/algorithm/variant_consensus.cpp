@@ -8,7 +8,8 @@
 
 namespace aseq {
 namespace algorithm {
-std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt, uint64_t flank) {
+
+std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt, size_t flank) {
   if (!cxt.IsBiallelic()) {
     throw util::invalid_argument()
         << util::error_message("Consensus is only valid for biallelic variants");
@@ -19,8 +20,8 @@ std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt
 
   // 1. Left-flank
   if (flank > 0) {
-// TODO: Adjust flank when there is a padding base
-      result = ref.Sequence(cxt.contig(), cxt.pos() - flank, cxt.pos() - 1);
+    // TODO: Adjust flank when there is a padding base
+    result = ref.Sequence(cxt.contig(), cxt.pos() - flank, cxt.pos() - 1);
   }
   // 2. Replacement
   const auto& alt_allele = cxt.alt(0);

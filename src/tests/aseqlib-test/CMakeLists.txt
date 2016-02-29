@@ -40,7 +40,7 @@ set(sources
     model/variant_context.cpp
     model/allele.cpp
     algorithm/variant.cpp
-)
+        io/fasta_sink.cpp)
 
 
 # Build executable

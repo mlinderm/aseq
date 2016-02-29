@@ -175,7 +175,7 @@ auto const header_line_def = lit("##") > (
 ) > -x3::eol;
 // clang-format on
 
-x3::rule<class ref_allele, VariantContext::Pos> const pos = "POS";
+x3::rule<class ref_allele, model::Pos> const pos = "POS";
 x3::rule<class qual, boost::optional<VariantContext::Qual> > const qual = "QUAL";
 
 // clang-format off

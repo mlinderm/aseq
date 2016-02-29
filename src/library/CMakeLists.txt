@@ -55,13 +55,13 @@ set(api_includes
     include/aseq/io/file_format.hpp
     include/aseq/io/vcf.hpp
     include/aseq/io/reference.hpp
-    include/aseq/model/contig.hpp
+    include/aseq/model/region.hpp
     include/aseq/model/allele.hpp
     include/aseq/model/variant_context.hpp
     include/aseq/algorithm/variant.hpp
     include/aseq/util/any.hpp
     include/aseq/util/attributes.hpp
-)
+    include/aseq/io/fasta.hpp )
 
 set(sources
     src/io/line_reader.cpp
@@ -72,11 +72,12 @@ set(sources
     src/io/vcf_source.cpp
     src/io/vcf_sink.cpp
     src/io/reference_source.cpp
+    src/io/fasta.cpp
     include/aseq/io/reference-mock.hpp
     src/model/allele.cpp
     src/model/variant_context.cpp
     src/algorithm/variant_consensus.cpp
-)
+    )
 
 # Group src files
 set(header_group "Header Files (API)")

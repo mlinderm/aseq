@@ -9,6 +9,8 @@
 #include "aseq/aseq.hpp"
 #include "aseq/io/variant.hpp"
 #include "aseq/io/reference.hpp"
+#include "aseq/io/fasta.hpp"
+#include "aseq/algorithm/variant.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -117,6 +119,7 @@ int main(int argc, char* argv[]) {
 int VariantsCommands::Main(const std::vector<std::string>& argv) {
   std::map<std::string, docopt::value> args = docopt::docopt(Usage(), argv, true, ASEQ_VERSION);
   using namespace aseq::io;
+  using namespace aseq::algorithm;
 
   try {
     ReferenceSource ref(args["--ref"].asString());
@@ -127,7 +130,12 @@ int VariantsCommands::Main(const std::vector<std::string>& argv) {
       return 1;
     }
 
-    std::cout << ">ref" << std::endl << ref.Sequence(v->contig(), v->pos(), v->end()) << std::endl;
+    FastaSink sink(std::cout);
+
+    uint64_t flank = args["--flank"].asLong();
+    sink.PushSequence("ref", ref.Sequence(v->contig(), v->pos() - flank, v->end() + flank))
+        .PushSequence("alt", Consensus(ref, *v, flank));
+
     if (source->NextVariant()) {
       LOG(WARNING) << "Multiple variants in input, but FASTA only emitted for the first";
     }

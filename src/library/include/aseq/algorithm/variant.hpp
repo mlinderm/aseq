@@ -12,6 +12,6 @@
 namespace aseq {
 namespace algorithm {
 
-std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt, uint64_t flank);
+std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt, size_t flank);
 }
 }

@@ -9,9 +9,7 @@ namespace model {
 
 VariantContext::VariantContext(impl::VariantContextData &&data)
     : util::HasAttributes(std::move(data.attrs_)),
-      contig_(std::move(data.contig_)),
-      pos_(std::move(data.pos_)),
-      end_(std::move(data.end_)),
+      HasRegion(std::move(data.contig_), data.pos_, data.end_),
       ref_(std::move(data.ref_)),
       alts_(std::move(data.alts_)),
       ids_(std::move(data.ids_)),
@@ -29,8 +27,7 @@ VariantContext::VariantContext(const Contig &contig, int64_t pos, const Allele &
 
 VariantContext::VariantContext(const Contig &contig, Pos pos, const Allele &ref,
                                std::initializer_list<Allele> alts)
-    : contig_(contig), pos_(pos), ref_(ref), alts_(alts) {
-  end_ = pos_ + ref_.size() - 1;
+    : HasRegion(contig, pos, pos + ref.size() - 1), ref_(ref), alts_(alts) {
   // TODO: Validate data
 }
 
