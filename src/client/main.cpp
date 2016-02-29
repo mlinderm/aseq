@@ -40,12 +40,14 @@ class VariantsCommands : public CommandInterface {
 
 Usage:
   aseq variants (-h | --help)
-  aseq variants consensus [--flank F] -R <ref> <file>
+  aseq variants consensus [--flank F] [--noREF | --noALT] -R <ref> <file>
 
 Options:
   -h --help                  Show this screen.
   -R <ref>, --ref <ref>      Reference fasta (indexed)
   --flank F                  Length of flanking sequence [default: 1000]
+  --noREF                    Don't emit reference consensus sequence
+  --noALT                    Don't emit alternate consensus sequence
 )";
   }
 
@@ -133,8 +135,12 @@ int VariantsCommands::Main(const std::vector<std::string>& argv) {
     FastaSink sink(std::cout);
 
     uint64_t flank = args["--flank"].asLong();
-    sink.PushSequence("ref", ref.Sequence(v->contig(), v->pos() - flank, v->end() + flank))
-        .PushSequence("alt", Consensus(ref, *v, flank));
+    if (!args["--noREF"].asBool()) {
+      sink.PushSequence("ref", ref.Sequence(v->contig(), v->pos() - flank, v->end() + flank));
+    }
+    if (!args["--noALT"].asBool()) {
+      sink.PushSequence("alt", Consensus(ref, *v, flank));
+    }
 
     if (source->NextVariant()) {
       LOG(WARNING) << "Multiple variants in input, but FASTA only emitted for the first";

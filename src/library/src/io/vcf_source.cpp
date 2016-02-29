@@ -337,7 +337,7 @@ class VCFVariantParser {
 
     // Fix up variant based on INFO fields
     context.end_ = context.attrs_.at_or<util::Attributes::Integer>(
-        VCFHeader::INFO::END, context.pos_ + context.ref_.size() - 1);
+        VCFHeader::INFO::END, (context.pos_ + context.ref_.size()) - 1);
 
     return VariantContext(std::move(context));
   }
