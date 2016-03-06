@@ -53,6 +53,11 @@ class Attributes {
   }
 
   template <typename T>
+  static const T& at(const_iterator i) {
+    return any_cast<const T&>(i->second);
+  }
+
+  template <typename T>
   const T& at_or(const key_type& k, const T& v) const {
     auto i = find(k);
     return i != end() ? any_cast<const T&>(i->second) : v;
@@ -60,6 +65,7 @@ class Attributes {
 
   mapped_type& operator[](const key_type& k) { return attrs_[k]; }
 
+  iterator erase(const_iterator i) { return attrs_.erase(i); }
   size_t erase(const key_type& k) { return attrs_.erase(k); }
 
   template <class T>

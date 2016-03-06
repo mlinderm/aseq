@@ -1,10 +1,16 @@
+#ifndef FILTER_FIELD
+#define FILTER_FIELD(id, description)
+#endif
+
 #ifndef INFO_FIELD
 #define INFO_FIELD(id, number, type, description)
 #endif
 
-#ifndef FILTER_FIELD
-#define FILTER_FIELD(id, description)
+#ifndef FORMAT_FIELD
+#define FORMAT_FIELD(id, number, type, description)
 #endif
+
+FILTER_FIELD(PASS, "PASSing")
 
 INFO_FIELD(AC, Field::A, Field::Type::INTEGER, "Allele count in genotypes, for each ALT allele, in the same order as listed")
 INFO_FIELD(AN, 1, Field::Type::INTEGER, "Total number of alleles in called genotypes")
@@ -20,7 +26,12 @@ INFO_FIELD(HOMLEN, Field::UNBOUNDED, Field::Type::INTEGER, "Length of base pair 
 INFO_FIELD(HOMSEQ, Field::UNBOUNDED, Field::Type::STRING, "Sequence of base pair identical micro-homology at event breakpoints")
 INFO_FIELD(BKPTID, Field::UNBOUNDED, Field::Type::STRING, "ID of the assembled alternate allele in the assembly file")
 
-FILTER_FIELD(PASS, "PASSing")
+FORMAT_FIELD(GT, 1, Field::Type::GENOTYPE, "Genotype")
+FORMAT_FIELD(GQ, 1, Field::Type::INTEGER, "Genotype Quality")
+FORMAT_FIELD(DP, 1, Field::Type::INTEGER, "Read Depth")
+FORMAT_FIELD(HQ, 2, Field::Type::INTEGER, "Haplotype Quality")
+FORMAT_FIELD(FT, Field::UNBOUNDED, Field::Type::FILTER, "Filters")
 
 #undef FILTER_FIELD
 #undef INFO_FIELD
+#undef FORMAT_FIELD

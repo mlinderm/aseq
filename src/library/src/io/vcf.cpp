@@ -2,6 +2,8 @@
 // Created by Michael Linderman on 12/13/15.
 //
 
+#include <ostream>
+
 #include "aseq/io/vcf.hpp"
 
 namespace aseq {
@@ -10,13 +12,18 @@ namespace io {
 const VCFHeader::Field::Number VCFHeader::Field::R, VCFHeader::Field::A, VCFHeader::Field::G,
     VCFHeader::Field::UNBOUNDED;
 
-#define INFO_FIELD(id, number, type, description) \
-  const VCFHeader::Field VCFHeader::INFO::id(#id, number, VCFHeader::type, description);
 #define FILTER_FIELD(id, description) \
   const VCFHeader::Field VCFHeader::FILTER::id(#id, description);
+#define INFO_FIELD(id, number, type, description) \
+  const VCFHeader::Field VCFHeader::INFO::id(#id, number, VCFHeader::type, description);
+#define FORMAT_FIELD(id, number, type, description) \
+  const VCFHeader::Field VCFHeader::FORMAT::id(#id, number, VCFHeader::type, description);
+
 #include "aseq/io/vcf_fields.def"
-#undef FILTER_FIELD
+
+#undef FORMAT_FIELD
 #undef INFO_FIELD
+#undef FILTER_FIELD
 
 std::pair<const VCFHeader::Field &, bool> VCFHeader::AddField(VCFHeader::Fields &fields,
                                                               const VCFHeader::Field &field) {
@@ -27,5 +34,10 @@ std::pair<const VCFHeader::Field &, bool> VCFHeader::AddField(VCFHeader::Fields 
 bool VCFHeader::HasField(const Fields &fields, const Fields::key_type &key) {
   return fields.find(key) != fields.end();
 }
+
+std::ostream &operator<<(std::ostream &os, const VCFHeader::Field &field) {
+  return (os << field.id_);
+}
+
 }  // namespace io
 }  // namespace aseq

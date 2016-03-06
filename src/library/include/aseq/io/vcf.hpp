@@ -6,11 +6,13 @@
 
 #include <type_traits>
 #include <unordered_map>
+#include <iosfwd>
 
 #include <boost/range/adaptor/map.hpp>
 
 #include "aseq/io/line.hpp"
 #include "aseq/io/variant.hpp"
+#include "aseq/model/genotype.hpp"
 
 namespace aseq {
 namespace io {
@@ -28,21 +30,26 @@ class VCFHeader {
 
     static const Number R = -4, A = -3, G = -2, UNBOUNDED = -1;
 
-    Field() : number_(0), type_(Type::FLAG) {}
-    Field(const ID& id, const std::string& description = "")
-        : id_(id), number_(0), type_(Type::FLAG), description_(description) {}
-    Field(const ID& id, Number number, Type type, const std::string& description)
-        : id_(id), number_(number), type_(type), description_(description) {}
+    Field() : nmbr_(0), type_(Type::FLAG) {}
+    Field(const ID& id, const std::string& desc = "") : Field(id, 0, Type::FLAG, desc) {}
+    Field(const ID& id, Number number, Type type, const std::string& desc)
+        : id_(id), nmbr_(number), type_(type), desc_(desc) {}
 
     operator const ID&() const { return id_; }
 
-    bool IsFlag() const { return number_ == 0 && type_ == Type::FLAG; }
-    bool IsScalar() const { return number_ == 1; }
+    bool IsFlag() const { return nmbr_ == 0 && type_ == Type::FLAG; }
+    bool IsScalar() const { return nmbr_ == 1; }
 
     ID id_;
-    Number number_;
+    Number nmbr_;
     Type type_;
-    std::string description_;
+    std::string desc_;
+  };
+
+  struct FILTER {
+#define FILTER_FIELD(id, description) static const Field id;
+#include "vcf_fields.def"
+#undef FILTER_FIELD
   };
 
   struct INFO {
@@ -51,10 +58,10 @@ class VCFHeader {
 #undef INFO_FIELD
   };
 
-  struct FILTER {
-#define FILTER_FIELD(id, description) static const Field id;
+  struct FORMAT {
+#define FORMAT_FIELD(id, number, type, description) static const Field id;
 #include "vcf_fields.def"
-#undef FILTER_FIELD
+#undef FORMAT_FIELD
   };
 
   typedef std::unordered_map<util::Attributes::key_type, Field> Fields;
@@ -72,25 +79,34 @@ class VCFHeader {
 
 #define FIELD(prefix)                                                   \
   Fields& prefix() { return prefix##_; }                                \
-  boost::select_second_const_range<Fields> prefix##_Values() const {    \
+  boost::select_second_const_range<Fields> prefix##Values() const {    \
     return boost::adaptors::values(prefix##_);                          \
   }                                                                     \
-  std::pair<const Field&, bool> prefix##_AddField(const Field& field) { \
+  std::pair<const Field&, bool> Add##prefix##Field(const Field& field) { \
     return AddField(prefix##_, field);                                  \
   };                                                                    \
-  bool prefix##_HasField(const Fields::key_type& key) const { return HasField(prefix##_, key); }
+  bool Has##prefix##Field(const Fields::key_type& key) const { return HasField(prefix##_, key); }
 
-  FIELD(INFO)
   FIELD(FILTER)
+  FIELD(INFO)
+  FIELD(FORMAT)
 
 #undef FIELD
 
+  // Sample methods
+  size_t NumSamples() const { return samples_.size(); }
+  const model::Sample& Sample(size_t idx) const { return samples_.at(idx); }
+  void SetSamples(std::initializer_list<model::Sample> samples) { samples_.assign(samples); }
+
  private:
   FileFormat file_format_;
-  Fields INFO_, FILTER_;
+  Fields FILTER_, INFO_, FORMAT_;
+  std::vector<model::Sample> samples_;
 
   friend class VCFSource;
 };
+
+std::ostream& operator<<(std::ostream&, const VCFHeader::Field&);
 
 namespace impl {
 
@@ -106,9 +122,9 @@ class VCFSource : public VariantSourceInterface {
   VCFSource(FileFormat format, Reader&& reader);
 
   virtual FileFormat file_format() const override;
-  virtual NextResult NextVariant() override;
-
   const VCFHeader& header() const { return header_; }
+
+  virtual NextResult NextVariant() override;
 
  private:
   VCFHeader header_;

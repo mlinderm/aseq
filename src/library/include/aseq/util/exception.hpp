@@ -31,5 +31,7 @@ struct exception_base : virtual std::exception, virtual boost::exception {
 class invalid_argument : public exception_base {};
 class file_parse_error : public exception_base {};
 class file_write_error : public exception_base {};
+
+class no_such_sample : public exception_base {};
 }
 }

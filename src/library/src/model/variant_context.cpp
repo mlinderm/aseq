@@ -7,6 +7,9 @@
 namespace aseq {
 namespace model {
 
+constexpr AlleleIndex VariantContext::kNoCallIdx, VariantContext::kNonRefIdx,
+    VariantContext::kRefIdx, VariantContext::kFirstAltIdx;
+
 VariantContext::VariantContext(impl::VariantContextData &&data)
     : util::HasAttributes(std::move(data.attrs_)),
       HasRegion(std::move(data.contig_), data.pos_, data.end_),
@@ -29,6 +32,45 @@ VariantContext::VariantContext(const Contig &contig, Pos pos, const Allele &ref,
                                std::initializer_list<Allele> alts)
     : HasRegion(contig, pos, pos + ref.size() - 1), ref_(ref), alts_(alts) {
   // TODO: Validate data
+}
+
+VariantContext::VariantContext(VariantContext &&other)
+    : util::HasAttributes(other),
+      HasRegion(other),
+      ref_(std::move(other.ref_)),
+      alts_(std::move(other.alts_)),
+      ids_(std::move(other.ids_)),
+      qual_(std::move(other.qual_)),
+      filters_(std::move(other.filters_))
+
+{
+  genotypes_.reserve(other.genotypes_.size());
+  for (Genotype &g : other.genotypes_) {
+    genotypes_.emplace_back(*this, std::move(g));
+  }
+}
+
+VariantContext &VariantContext::operator=(VariantContext &&rhs) {
+  this->HasRegion::operator=(std::move(rhs));
+  this->util::HasAttributes::operator=(std::move(rhs));
+  ref_ = std::move(rhs.ref_);
+  alts_ = std::move(rhs.alts_);
+  ids_ = std::move(rhs.ids_);
+  qual_ = std::move(rhs.qual_);
+  filters_ = std::move(rhs.filters_);
+  genotypes_.clear();
+  for (Genotype &g : rhs.genotypes_) {
+    genotypes_.emplace_back(*this, std::move(g));
+  }
+  return *this;
+}
+
+const Genotype &VariantContext::GetGenotype(const Sample &sample) const {
+  // TODO: Sort genotypes for quicker access
+  auto r = std::find_if(genotypes_.begin(), genotypes_.end(),
+                        [&](const Genotype &g) { return g.sample() == sample; });
+  if (r == genotypes_.end()) throw util::no_such_sample();
+  return *r;
 }
 
 std::ostream &operator<<(std::ostream &os, const VariantContext &vc) {

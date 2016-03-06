@@ -10,9 +10,10 @@
 #include <boost/optional.hpp>
 
 #include "aseq/util/exception.hpp"
-#include "aseq/model/allele.hpp"
 #include "aseq/util/attributes.hpp"
 #include "aseq/model/region.hpp"
+#include "aseq/model/allele.hpp"
+#include "aseq/model/genotype.hpp"
 
 namespace aseq {
 namespace model {
@@ -25,6 +26,10 @@ class CompareVariants;
 
 class VariantContext : public util::HasAttributes, public HasRegion {
  public:
+  static_assert(std::is_signed<AlleleIndex>::value, "AlleleIndex must be signed type");
+  static constexpr AlleleIndex kNoCallIdx = -1, kNonRefIdx = -2, kRefIdx = 0, kFirstAltIdx = 1;
+  static constexpr size_t kMaxAlleles = std::numeric_limits<AlleleIndex>::max();
+
   typedef std::vector<Allele> Alleles;
   typedef std::vector<std::string> IDs;
   typedef float Qual;
@@ -38,6 +43,8 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   VariantContext(const Contig &contig, Pos pos, const Allele &ref,
                  std::initializer_list<Allele> alts);
 
+  VariantContext(VariantContext &&);
+  VariantContext &operator=(VariantContext &&);
 
   const Allele &ref() const { return ref_; }
   const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
@@ -45,6 +52,17 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   bool IsMonoallelic() const { return alts_.empty(); }
   bool IsBiallelic() const { return alts_.size() == 1; }
   bool IsMultiAllelic() const { return alts_.size() > 1; }
+
+  bool HasQual() const { return static_cast<bool>(qual_); }
+
+  size_t NumGenotypes() const { return genotypes_.size(); }
+  const Genotype &GetGenotype(const Sample &sample) const;
+
+  template <typename... Args>
+  Genotype &AddGenotype(Args &&... args) {
+    genotypes_.emplace_back(*this, std::forward<Args>(args)...);
+    return genotypes_.back();
+  }
 
   friend std::ostream &operator<<(std::ostream &, const VariantContext &);
 
@@ -56,6 +74,8 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   IDs ids_;
   boost::optional<Qual> qual_;
   Filters filters_;
+
+  std::vector<Genotype> genotypes_;
 
   friend class CompareVariants;
 };
