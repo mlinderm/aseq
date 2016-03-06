@@ -61,7 +61,8 @@ set(api_includes
     include/aseq/algorithm/variant.hpp
     include/aseq/util/any.hpp
     include/aseq/util/attributes.hpp
-    include/aseq/io/fasta.hpp include/aseq/model/genotype.hpp)
+    include/aseq/io/fasta.hpp
+    include/aseq/model/genotype.hpp)
 
 set(sources
     src/io/line_reader.cpp
@@ -76,8 +77,9 @@ set(sources
     include/aseq/io/reference-mock.hpp
     src/model/allele.cpp
     src/model/variant_context.cpp
+    src/model/genotype.cpp
     src/algorithm/variant_consensus.cpp
-        src/model/genotype.cpp)
+    src/algorithm/variant_normalize.cpp)
 
 # Group src files
 set(header_group "Header Files (API)")

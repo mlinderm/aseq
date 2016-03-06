@@ -39,7 +39,8 @@ endif()
 
 set(sources
     main.cpp
-)
+    commands.hpp
+    variants.cpp)
 
 
 # Build executable

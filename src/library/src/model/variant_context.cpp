@@ -65,6 +65,16 @@ VariantContext &VariantContext::operator=(VariantContext &&rhs) {
   return *this;
 }
 
+VariantContext::VariantContext(VariantContext &&context, const Allele &ref)
+    : VariantContext(std::move(context)) {
+    ref_ = ref;
+}
+
+bool VariantContext::IsPASSing() const {
+  static VariantContext::Filter kPASS("PASS");
+  return filters_.size() == 1 && filters_.front() == kPASS;
+}
+
 const Genotype &VariantContext::GetGenotype(const Sample &sample) const {
   // TODO: Sort genotypes for quicker access
   auto r = std::find_if(genotypes_.begin(), genotypes_.end(),

@@ -46,6 +46,8 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   VariantContext(VariantContext &&);
   VariantContext &operator=(VariantContext &&);
 
+  VariantContext(VariantContext&&, const Allele& ref);
+
   const Allele &ref() const { return ref_; }
   const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
 
@@ -54,6 +56,8 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   bool IsMultiAllelic() const { return alts_.size() > 1; }
 
   bool HasQual() const { return static_cast<bool>(qual_); }
+  bool HasFilter() const { return !filters_.empty(); }
+  bool IsPASSing() const;
 
   size_t NumGenotypes() const { return genotypes_.size(); }
   const Genotype &GetGenotype(const Sample &sample) const;

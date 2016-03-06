@@ -2,17 +2,11 @@
 
 #include <docopt.h>
 #include <glog/logging.h>
-#include <boost/filesystem/path.hpp>
 #include <cppformat/format.h>
 
 #include "aseq-version.h"
-#include "aseq/aseq.hpp"
-#include "aseq/io/variant.hpp"
-#include "aseq/io/reference.hpp"
-#include "aseq/io/fasta.hpp"
-#include "aseq/algorithm/variant.hpp"
 
-namespace fs = boost::filesystem;
+#include "commands.hpp"
 
 static const char USAGE[] = R"(aseq Sequencing analysis toolkit
 
@@ -28,31 +22,9 @@ See 'aseq help <command>' for more information on a specific command.
 
 )";
 
-class CommandInterface {
- public:
-  virtual int Main(const std::vector<std::string>& argv) = 0;
-};
-
-class VariantsCommands : public CommandInterface {
- public:
-  virtual const char* Usage() const {
-    return R"(aseq Variant analysis commands
-
-Usage:
-  aseq variants (-h | --help)
-  aseq variants consensus [--flank F] [--noREF | --noALT] -R <ref> <file>
-
-Options:
-  -h --help                  Show this screen.
-  -R <ref>, --ref <ref>      Reference fasta (indexed)
-  --flank F                  Length of flanking sequence [default: 1000]
-  --noREF                    Don't emit reference consensus sequence
-  --noALT                    Don't emit alternate consensus sequence
-)";
-  }
-
-  virtual int Main(const std::vector<std::string>& argv) override;
-};
+// Create map of commands
+std::map<std::string, int (*)(const std::vector<std::string>&)> kCommands{
+    {"variants", &VariantsMain}};
 
 int main(int argc, char* argv[]) {
   std::map<std::string, docopt::value> args =
@@ -61,19 +33,19 @@ int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
 
-  // Always log version
-  LOG(INFO) << "aseq version: " << ASEQ_VERSION;
+  std::string command(args["<command>"].asString());
 
-  if (args["<command>"].asString() == "variants") {
-    std::vector<std::string> sub_argv({std::string("variants")});
-    auto a = args["<args>"].asStringList();
-    sub_argv.insert(sub_argv.end(), a.begin(), a.end());
-    return VariantsCommands().Main(sub_argv);
+  auto itr = kCommands.find(command);
+  if (itr != kCommands.end()) {
+    std::vector<std::string> sub_argv(args["<args>"].asStringList());
+    sub_argv.insert(sub_argv.begin(), itr->first);
+    return itr->second(sub_argv);
   } else {
-    std::cerr << fmt::format("{} is not a valid command", args["<command>"]) << std::endl;
+    fmt::print(std::cerr, "'{}' is not a valid command\n", command);
     std::cerr << USAGE;
-    return 1;
   }
+
+  return 1;
 
   /*
     using namespace aseq::io;
@@ -115,40 +87,4 @@ int main(int argc, char* argv[]) {
       }
     }
   */
-  return 0;
-}
-
-int VariantsCommands::Main(const std::vector<std::string>& argv) {
-  std::map<std::string, docopt::value> args = docopt::docopt(Usage(), argv, true, ASEQ_VERSION);
-  using namespace aseq::io;
-  using namespace aseq::algorithm;
-
-  try {
-    ReferenceSource ref(args["--ref"].asString());
-    auto source = VariantSourceInterface::MakeVariantSource(args["<file>"].asString());
-    auto v = source->NextVariant();
-    if (!v) {
-      LOG(ERROR) << "No variants found in input";
-      return 1;
-    }
-
-    FastaSink sink(std::cout);
-
-    uint64_t flank = args["--flank"].asLong();
-    if (!args["--noREF"].asBool()) {
-      sink.PushSequence("ref", ref.Sequence(v->contig(), v->pos() - flank, v->end() + flank));
-    }
-    if (!args["--noALT"].asBool()) {
-      sink.PushSequence("alt", Consensus(ref, *v, flank));
-    }
-
-    if (source->NextVariant()) {
-      LOG(WARNING) << "Multiple variants in input, but FASTA only emitted for the first";
-    }
-  } catch (aseq::util::exception_base& e) {
-    LOG(ERROR) << e.what();
-    return 1;
-  }
-
-  return 0;
 }

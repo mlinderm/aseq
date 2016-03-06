@@ -86,10 +86,8 @@ TEST_P(VCFSingleSampleSourceTest, IteratesAndParsesVariants) {
   r = source->NextVariant();
   ASSERT_TRUE(r);
   {
-    // Variant variant("chr1", 100, Allele::A, Variant::Alleles({Allele::T}));
-    // EXPECT_EQ(variant, r->variant());
     EXPECT_TRUE(r->HasQual());
-    // EXPECT_TRUE(r->IsPASSing());
+    EXPECT_TRUE(r->HasFilter() && r->IsPASSing());
     EXPECT_TRUE(r->IsBiallelic());
     EXPECT_EQ(Allele::A, r->ref());
     EXPECT_EQ(Allele::T, r->alt(0));
@@ -111,7 +109,8 @@ TEST_P(VCFSpecificationSourceTest, IteratesAndParsesVariants) {
   auto source = VariantSourceInterface::MakeVariantSource(file_);
   ASSERT_TRUE(source);
 
-  const VCFHeader& header = static_cast<VCFSource*>(source.get())->header();
+  auto* vcf_source = dynamic_cast<VCFSource*>(source.get());
+  auto& header = vcf_source->header();
   EXPECT_TRUE(header.HasFILTERField("q10"));
   EXPECT_TRUE(header.HasFORMATField(VCFHeader::FORMAT::GQ));
 
