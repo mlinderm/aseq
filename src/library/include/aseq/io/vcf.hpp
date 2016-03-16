@@ -77,14 +77,14 @@ class VCFHeader {
   static std::pair<const Field&, bool> AddField(Fields&, const Field&);
   static bool HasField(const Fields&, const Fields::key_type&);
 
-#define FIELD(prefix)                                                   \
-  Fields& prefix() { return prefix##_; }                                \
-  boost::select_second_const_range<Fields> prefix##Values() const {    \
-    return boost::adaptors::values(prefix##_);                          \
-  }                                                                     \
+#define FIELD(prefix)                                                    \
+  Fields& prefix() { return prefix##_; }                                 \
+  boost::select_second_const_range<Fields> prefix##Values() const {      \
+    return boost::adaptors::values(prefix##_);                           \
+  }                                                                      \
   std::pair<const Field&, bool> Add##prefix##Field(const Field& field) { \
-    return AddField(prefix##_, field);                                  \
-  };                                                                    \
+    return AddField(prefix##_, field);                                   \
+  };                                                                     \
   bool Has##prefix##Field(const Fields::key_type& key) const { return HasField(prefix##_, key); }
 
   FIELD(FILTER)
@@ -104,6 +104,7 @@ class VCFHeader {
   std::vector<model::Sample> samples_;
 
   friend class VCFSource;
+  friend class VCFSink;
 };
 
 std::ostream& operator<<(std::ostream&, const VCFHeader::Field&);
@@ -112,7 +113,11 @@ namespace impl {
 
 template <typename Line>
 class VCFVariantParser;
-}
+
+class VCFVariantGeneratorInterface {
+
+};
+}  // namespace impl
 
 class VCFSource : public VariantSourceInterface {
  public:
@@ -152,6 +157,9 @@ class VCFSink : public VariantSinkInterface {
  private:
   VCFHeader header_;
   Writer writer_;
+
+  // Specify the deleter to enable the incomplete type
+  std::unique_ptr<impl::VCFVariantGeneratorInterface> generator_;
 };
 }
 }

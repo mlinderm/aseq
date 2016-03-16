@@ -57,6 +57,7 @@ struct fxn_ptr_table {
   void (*destruct)(void**);
   void (*clone)(void* const*, void**);
   void (*move)(void* const*, void**);
+  std::basic_ostream<Char>& (*stream_out)(std::basic_ostream<Char>&, void* const*);
 };
 
 // static functions for small value-types
@@ -76,6 +77,10 @@ struct fxns<boost::mpl::true_> {
     static void move(void* const* src, void** dest) {
       reinterpret_cast<T*>(dest)->~T();
       *reinterpret_cast<T*>(dest) = *reinterpret_cast<T const*>(src);
+    }
+    static std::basic_ostream<Char>& stream_out(std::basic_ostream<Char>& o, void* const* obj) {
+      o << *reinterpret_cast<T const*>(obj);
+      return o;
     }
   };
 };
@@ -101,6 +106,10 @@ struct fxns<boost::mpl::false_> {
       (*reinterpret_cast<T**>(dest))->~T();
       **reinterpret_cast<T**>(dest) = **reinterpret_cast<T* const*>(src);
     }
+    static std::basic_ostream<Char>& stream_out(std::basic_ostream<Char>& o, void* const* obj) {
+      o << **reinterpret_cast<T* const*>(obj);
+      return o;
+    }
   };
 };
 
@@ -115,12 +124,18 @@ struct get_table {
         fxns<is_small>::template type<T, Char>::static_delete,
         fxns<is_small>::template type<T, Char>::destruct,
         fxns<is_small>::template type<T, Char>::clone,
-        fxns<is_small>::template type<T, Char>::move};
+        fxns<is_small>::template type<T, Char>::move,
+        fxns<is_small>::template type<T, Char>::stream_out};
     return &static_table;
   }
 };
 
 struct empty {};
+
+template <typename Char>
+inline std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& o, empty const&) {
+  return o;
+}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -247,6 +262,12 @@ class basic_any {
       table = util::detail::get_table<util::detail::empty>::template get<Char>();
       object = 0;
     }
+  }
+
+  template <typename Char_>
+  friend inline std::basic_ostream<Char_>& operator<<(std::basic_ostream<Char_>& o,
+                                                      basic_any const& obj) {
+    return obj.table->stream_out(o, &obj.object);
   }
 
 #ifndef BOOST_NO_MEMBER_TEMPLATE_FRIENDS

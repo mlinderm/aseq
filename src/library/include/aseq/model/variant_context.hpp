@@ -32,7 +32,7 @@ class VariantContext : public util::HasAttributes, public HasRegion {
 
   typedef std::vector<Allele> Alleles;
   typedef std::vector<std::string> IDs;
-  typedef float Qual;
+  typedef boost::optional<float> Qual;
   typedef util::Attributes::key_type Filter;
   typedef std::vector<Filter> Filters;
 
@@ -46,9 +46,14 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   VariantContext(VariantContext &&);
   VariantContext &operator=(VariantContext &&);
 
-  VariantContext(VariantContext&&, const Allele& ref);
+  VariantContext(VariantContext &&, const Allele &ref);
 
   const Allele &ref() const { return ref_; }
+  const Alleles &alts() const { return alts_; }
+  const IDs &ids() const { return ids_; }
+  const Qual &qual() const { return qual_; }
+  const Filters &filters() const { return filters_; }
+
   const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
 
   bool IsMonoallelic() const { return alts_.empty(); }
@@ -76,7 +81,7 @@ class VariantContext : public util::HasAttributes, public HasRegion {
 
   // Context Fields
   IDs ids_;
-  boost::optional<Qual> qual_;
+  Qual qual_;
   Filters filters_;
 
   std::vector<Genotype> genotypes_;
@@ -104,7 +109,7 @@ struct VariantContextData {
   Allele ref_;
   VariantContext::Alleles alts_;
   VariantContext::IDs ids_;
-  boost::optional<VariantContext::Qual> qual_;
+  VariantContext::Qual qual_;
   VariantContext::Filters filters_;
   util::Attributes attrs_;
 };

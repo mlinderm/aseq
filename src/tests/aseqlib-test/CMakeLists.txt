@@ -41,7 +41,8 @@ set(sources
     model/allele.cpp
     algorithm/variant.cpp
     io/fasta_sink.cpp
-    algorithm/variant-normalize.cpp)
+    algorithm/variant-normalize.cpp
+    io/vcf_sink.cpp)
 
 
 # Build executable

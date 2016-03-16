@@ -213,7 +213,7 @@ auto const header_line_def = lit("##") > (
 // clang-format on
 
 x3::rule<class ref_allele, model::Pos> const pos = "POS";
-x3::rule<class qual, boost::optional<VariantContext::Qual> > const qual = "QUAL";
+x3::rule<class qual, VariantContext::Qual> const qual = "QUAL";
 
 #define ATTR_RULE(name, desc) x3::rule<class name, Attributes::mapped_type> const name = desc
 ATTR_RULE(integer_value, "Integer value");
@@ -461,7 +461,7 @@ class VCFVariantParser {
         Attributes sample_attr;
 
         auto f = boost::make_split_iterator(*fields_itr, kFormatFinder);
-        for (auto p = format.begin(), e = format.end(); p != e && f != kSplitEnd; ++p, ++f) {
+        for (auto p = format.begin(); p != format.end() && f != kSplitEnd; ++p, ++f) {
           auto& parser = *(*p);
           parser.Parse(f->begin(), f->end(), sample_attr);
         }

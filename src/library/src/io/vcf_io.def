@@ -1,0 +1,16 @@
+#define FILE_TYPES \
+ ((FileFormat::VCF4_1, "VCFv4.1"))\
+ ((FileFormat::VCF4_2, "VCFv4.2"))
+
+#define FIELD_TYPES \
+ ((VCFHeader::Field::Type::STRING, "String"))\
+ ((VCFHeader::Field::Type::CHARACTER, "Character"))\
+ ((VCFHeader::Field::Type::INTEGER, "Integer"))\
+ ((VCFHeader::Field::Type::FLOAT, "Float"))\
+ ((VCFHeader::Field::Type::FLAG, "Flag"))
+
+#define FIELD_NUMBER \
+ ((VCFHeader::Field::A, "A"))\
+ ((VCFHeader::Field::G, "G"))\
+ ((VCFHeader::Field::R, "R"))\
+ ((VCFHeader::Field::UNBOUNDED, "."))

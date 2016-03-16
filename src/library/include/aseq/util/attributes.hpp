@@ -141,3 +141,14 @@ class HasAttributes {
 
 }  // namespace util
 }  // namespace aseq
+
+namespace std {
+template <typename T>
+std::ostream& operator<<(std::ostream& ostream, const std::vector<T>& attr) {
+  if (attr.size() > 1) {
+    copy(attr.begin(), attr.end() - 1, std::ostream_iterator<T>(ostream, ","));
+  }
+  ostream << attr.back();
+  return ostream;
+}
+}

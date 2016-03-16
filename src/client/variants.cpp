@@ -36,7 +36,7 @@ Options:
 int IntervalsMain(std::map<std::string, docopt::value>& args) {
   using namespace aseq::io;
 
-  auto flank = args["--flank"].asLong();
+  aseq::model::Pos flank = args["--flank"].asLong();
   if (flank < 0) {
     std::cerr << "--flank argument must be > 0" << std::endl;
     std::cerr << USAGE;
@@ -55,7 +55,7 @@ int ConsensusMain(std::map<std::string, docopt::value>& args) {
   using namespace aseq::io;
   using namespace aseq::algorithm;
 
-  auto flank = args["--flank"].asLong();
+  aseq::model::Pos flank = args["--flank"].asLong();
   if (flank < 0) {
     std::cerr << "--flank argument must be > 0" << std::endl;
     std::cerr << USAGE;

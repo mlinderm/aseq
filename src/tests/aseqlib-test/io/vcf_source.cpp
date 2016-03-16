@@ -112,6 +112,32 @@ TEST_F(VCFVariantParsingTest, ParsesComplexSitesOnlyVariant) {
   });
 }
 
+TEST_F(VCFVariantParsingTest, RejectsIllFormedSitesOnlyVariant) {
+  using aseq::io::impl::ParseVCFVariant;
+  using aseq::util::Attributes;
+  using aseq::util::file_parse_error;
+
+  EXPECT_THROW({
+    std::string line("1\t1\t.\tA\t.\t.\t.\tEND");
+    VariantContext context = ParseVCFVariant(line, header_);
+  }, file_parse_error);
+
+  EXPECT_THROW({
+    std::string line("1\t1\t.\tA\t.\t.\t.\tEND=");
+    VariantContext context = ParseVCFVariant(line, header_);
+  }, file_parse_error);
+
+  EXPECT_THROW({
+    std::string line("1\t1\t.\tA\t.\t.\t.\tEND=A");
+    VariantContext context = ParseVCFVariant(line, header_);
+  }, file_parse_error);
+
+  EXPECT_THROW({
+    std::string line("1\t1\t.\tA\t.\t.\t.\tEND=2,3");
+    VariantContext context = ParseVCFVariant(line, header_);
+  }, file_parse_error);
+}
+
 TEST_F(VCFVariantParsingTest, ParsesUndefinedINFOfields) {
   using aseq::io::impl::ParseVCFVariant;
   using aseq::util::Attributes;
