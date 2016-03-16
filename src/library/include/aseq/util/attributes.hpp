@@ -59,8 +59,8 @@ class Attributes {
 
   template <typename T>
   const T& at_or(const key_type& k, const T& v) const {
-    auto i = find(k);
-    return i != end() ? any_cast<const T&>(i->second) : v;
+    auto i = attrs_.find(k);
+    return i != attrs_.end() ? any_cast<const T&>(i->second) : v;
   }
 
   mapped_type& operator[](const key_type& k) { return attrs_[k]; }
@@ -86,6 +86,13 @@ template <>
 inline const Attributes::mapped_type& Attributes::at<Attributes::mapped_type>(
     const Attributes::key_type& k) const {
   return attrs_.at(k);
+}
+
+template <>
+inline const Attributes::mapped_type& Attributes::at_or<Attributes::mapped_type>(
+    const Attributes::key_type& k, const Attributes::mapped_type& v) const {
+  auto i = attrs_.find(k);
+  return i != attrs_.end() ? i->second : v;
 }
 
 template <>
@@ -119,6 +126,11 @@ class HasAttributes {
   template <typename T>
   T& GetAttribute(const Attributes::key_type& key) {
     return attrs_.at<T>(key);
+  }
+
+  template <typename T>
+  const T& GetAttributeOr(const Attributes::key_type& key, const T& v) const {
+    return attrs_.at_or<T>(key, v);
   }
 
   template <typename T>

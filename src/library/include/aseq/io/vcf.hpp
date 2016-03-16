@@ -20,7 +20,7 @@ namespace io {
 class VCFSource;
 class VCFSink;
 
-class VCFHeader {
+class VCFHeader : public VariantHeaderInterface {
  public:
   class Field {
    public:
@@ -94,8 +94,8 @@ class VCFHeader {
 #undef FIELD
 
   // Sample methods
-  size_t NumSamples() const { return samples_.size(); }
-  const model::Sample& Sample(size_t idx) const { return samples_.at(idx); }
+  size_t NumSamples() const override { return samples_.size(); }
+  const model::Sample& Sample(size_t idx) const override { return samples_.at(idx); }
   void SetSamples(std::initializer_list<model::Sample> samples) { samples_.assign(samples); }
 
  private:
@@ -127,7 +127,7 @@ class VCFSource : public VariantSourceInterface {
   VCFSource(FileFormat format, Reader&& reader);
 
   virtual FileFormat file_format() const override;
-  const VCFHeader& header() const { return header_; }
+  const VCFHeader& header() const override { return header_; }
 
   virtual NextResult NextVariant() override;
 

@@ -22,15 +22,17 @@ const char USAGE[] = R"(aseq Variant analysis commands
 
 Usage:
   aseq variants (-h | --help)
-  aseq variants intervals [--flank F] <file>
-  aseq variants consensus [--flank F] [--noREF | --noALT] -R <ref> <file>
+  aseq variants intervals [--flank <F>] <file>
+  aseq variants consensus [--flank <F>] [--noREF | --noALT] -R <ref> <file>
+  aseq variants table [--GF <field>...] <file>
 
 Options:
   -h --help                  Show this screen.
   -R <ref>, --ref <ref>      Reference fasta (indexed)
-  --flank F                  Length of flanks [default: 1000]
+  --flank <F>                Length of flanks [default: 1000]
   --noREF                    Don't emit reference consensus sequence
   --noALT                    Don't emit alternate consensus sequence
+  --GF <field>               Genotype field
 )";
 
 int IntervalsMain(std::map<std::string, docopt::value>& args) {
@@ -85,6 +87,36 @@ int ConsensusMain(std::map<std::string, docopt::value>& args) {
   return 0;
 }
 
+int VariantsToTableMain(std::map<std::string, docopt::value>& args) {
+  using namespace aseq::io;
+  using aseq::util::Attributes;
+
+  auto missing = Attributes::mapped_type(std::string("NA"));
+  auto& gfs = args["--GF"].asStringList();
+
+  auto source = VariantSourceInterface::MakeVariantSource(args["<file>"].asString());
+  auto& header = source->header();
+
+  for (size_t i = 0; i < header.NumSamples(); i++) {
+    for (size_t j = 0; j < gfs.size(); j++) {
+      fmt::print(std::cout, (j == 0 ? "{}.{}" : "\t{}.{}"), header.Sample(i), gfs[j]);
+    }
+  }
+  std::cout << std::endl;
+
+  while (auto v = source->NextVariant()) {
+    for (size_t i = 0; i < header.NumSamples(); i++) {
+      auto& gt = v->GetGenotype(header.Sample(i));
+      for (size_t j = 0; j < gfs.size(); j++) {
+        fmt::print(std::cout, (j == 0 ? "{}" : "\t{}"),
+                   gt.GetAttributeOr<Attributes::mapped_type>(gfs[j], missing));
+      }
+    }
+    std::cout << std::endl;
+  }
+  return 0;
+}
+
 }  // anonymous namespace
 
 int VariantsMain(const std::vector<std::string>& argv) {
@@ -95,6 +127,8 @@ int VariantsMain(const std::vector<std::string>& argv) {
       return ConsensusMain(args);
     } else if (args["intervals"].asBool()) {
       return IntervalsMain(args);
+    } else if (args["table"].asBool()) {
+      return VariantsToTableMain(args);
     }
   } catch (aseq::util::exception_base& e) {
     LOG(ERROR) << e.what();

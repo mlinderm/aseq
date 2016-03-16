@@ -16,8 +16,7 @@ namespace io {
 namespace impl {
 
 // Expose testing helper functions
-bool ParseVCFHeaderLine(const std::string& line, VCFHeader& header);
-VariantContext ParseVCFVariant(const std::string& line, VCFHeader& header);
+VariantContext ParseVCFVariantLine(const std::string& line, VCFHeader& header);
 }  // namespace impl
 }  // namespace io
 }  // namespace aseq
@@ -45,6 +44,14 @@ TEST(VCFHeaderParsingTest, ParsesMinimalVCFHeaderWithSample) {
   EXPECT_EQ(1, header.NumSamples());
 }
 
+TEST(VCFHeaderParsingTest, ParsesKeyValueLines) {
+  EXPECT_NO_THROW({
+    std::stringstream content(
+        "##fileformat=VCFv4.2\n##reference=\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO");
+    VCFSource source(FileFormat::VCF4_2, ASCIILineReaderInterface::MakeLineReader(content));
+  });
+}
+
 class VCFVariantParsingTest : public ::testing::Test {
  public:
   VCFVariantParsingTest() : header_(FileFormat::VCF4_2) {}
@@ -67,10 +74,10 @@ class VCFVariantParsingTest : public ::testing::Test {
 };
 
 TEST_F(VCFVariantParsingTest, ParsesMinimalSitesOnlyVariant) {
-  using aseq::io::impl::ParseVCFVariant;
+  using aseq::io::impl::ParseVCFVariantLine;
 
   std::string line = "1\t1\t.\tA\t.\t.\t.\t.";
-  VariantContext context = ParseVCFVariant(line, header_);
+  VariantContext context = ParseVCFVariantLine(line, header_);
   EXPECT_EQ(Contig("1"), context.contig());
   EXPECT_EQ(1, context.pos());
   EXPECT_EQ(1, context.end());
@@ -78,87 +85,87 @@ TEST_F(VCFVariantParsingTest, ParsesMinimalSitesOnlyVariant) {
 }
 
 TEST_F(VCFVariantParsingTest, ParsesComplexSitesOnlyVariant) {
-  using aseq::io::impl::ParseVCFVariant;
+  using aseq::io::impl::ParseVCFVariantLine;
   using aseq::util::Attributes;
 
   EXPECT_NO_THROW({
     std::string line("1\t1\trs100\tA\tG,<NON_REF>\t100.0\tLowQual\tEND=101");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
     EXPECT_EQ(101, context.GetAttribute<Attributes::Integer>("END"));
   });
   EXPECT_NO_THROW({
     std::string line(
         "1\t2827694\trs2376870\tCGTGGATGCGGGGAC\tC\t.\tPASS\tSVTYPE=DEL;END=2827762;HOMLEN=1;"
         "HOMSEQ=G;SVLEN=-68");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   });
   EXPECT_NO_THROW({
     std::string line(
         "2\t321682\t.\tT\t<DEL>\t6\tPASS\tSVTYPE=DEL;END=321887;SVLEN=-205;CIPOS=-56,20;CIEND=-10,"
         "62");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   });
 
   EXPECT_NO_THROW({
     std::string line(
         "2\t14477084\t.\tC\t<DEL:ME:ALU>\t6\tPASS\tSVTYPE=DEL;END=14477381;SVLEN=-297;CIPOS=-22,18;"
         "CIEND=-12,32");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   });
 
   EXPECT_NO_THROW({
     std::string line("2\t321681\tbnd_W\tG\tG]17:198982]\t6\tPASS\tSVTYPE=BND");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   });
 }
 
 TEST_F(VCFVariantParsingTest, RejectsIllFormedSitesOnlyVariant) {
-  using aseq::io::impl::ParseVCFVariant;
+  using aseq::io::impl::ParseVCFVariantLine;
   using aseq::util::Attributes;
   using aseq::util::file_parse_error;
 
   EXPECT_THROW({
     std::string line("1\t1\t.\tA\t.\t.\t.\tEND");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   }, file_parse_error);
 
   EXPECT_THROW({
     std::string line("1\t1\t.\tA\t.\t.\t.\tEND=");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   }, file_parse_error);
 
   EXPECT_THROW({
     std::string line("1\t1\t.\tA\t.\t.\t.\tEND=A");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   }, file_parse_error);
 
   EXPECT_THROW({
     std::string line("1\t1\t.\tA\t.\t.\t.\tEND=2,3");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
   }, file_parse_error);
 }
 
 TEST_F(VCFVariantParsingTest, ParsesUndefinedINFOfields) {
-  using aseq::io::impl::ParseVCFVariant;
+  using aseq::io::impl::ParseVCFVariantLine;
   using aseq::util::Attributes;
 
   EXPECT_NO_THROW({
     std::string line("1\t1\trs100\tA\tG\t100.0\tLowQual\tNEW_FLAG;NEW_STRINGS=1,2");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
     ASSERT_TRUE(header_.HasINFOField("NEW_FLAG"));
     ASSERT_TRUE(header_.HasINFOField("NEW_STRINGS"));
   });
 }
 
 TEST_F(VCFVariantParsingTest, ParsesMinimalVariantWithSamples) {
-  using aseq::io::impl::ParseVCFVariant;
+  using aseq::io::impl::ParseVCFVariantLine;
   using aseq::util::Attributes;
   header_.SetSamples({"NA12878", "NA12891"});
   ASSERT_TRUE(header_.NumSamples() == 2);
 
   EXPECT_NO_THROW({
     std::string line("1\t1\t.\tA\tG\t.\t.\t.\tGT\t0/1\t0|1");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
     ASSERT_EQ(2, context.NumGenotypes());
 
     {
@@ -181,14 +188,14 @@ TEST_F(VCFVariantParsingTest, ParsesMinimalVariantWithSamples) {
 }
 
 TEST_F(VCFVariantParsingTest, ParsesComplexVariantWithSamples) {
-  using aseq::io::impl::ParseVCFVariant;
+  using aseq::io::impl::ParseVCFVariantLine;
   using aseq::util::Attributes;
   header_.SetSamples({"NA12878", "NA12891"});
   ASSERT_EQ(2, header_.NumSamples());
 
   EXPECT_NO_THROW({
     std::string line("1\t1\t.\tA\tG\t.\t.\t.\tGT:DP:FT:GQ:HQ\t0/1:20:dp;gq:30:4,5\t0|1:25:.:.:.,.");
-    VariantContext context = ParseVCFVariant(line, header_);
+    VariantContext context = ParseVCFVariantLine(line, header_);
     ASSERT_TRUE(context.NumGenotypes() == 2);
 
     {

@@ -203,7 +203,7 @@ auto const header_field_def = (
     (lit("INFO") > field_attributes)[AddINFOField]
     | (lit("FORMAT") > field_attributes)[AddFORMATField]
     | (lit("FILTER") > filter_or_alt_attributes)[AddFILTERField]
-    | ((+x3::alnum) > '=' > (+(char_ - x3::eol)))
+    | ((+x3::alnum) > '=' > (*(char_ - x3::eol)))
 );
 
 auto const header_line_def = lit("##") > (
@@ -542,7 +542,7 @@ class VCFVariantParser {
   }
 };
 
-VariantContext ParseVCFVariant(const std::string& line, VCFHeader& header) {
+VariantContext ParseVCFVariantLine(const std::string &line, VCFHeader &header) {
   VCFVariantParser<const std::string> parser(header);
   return parser.ParseVCFVariant(line);
 }

@@ -21,6 +21,12 @@ class path;
 namespace aseq {
 namespace io {
 
+class VariantHeaderInterface {
+ public:
+  virtual size_t NumSamples() const = 0;
+  virtual const model::Sample& Sample(size_t idx) const = 0;
+};
+
 class VariantSourceInterface {
  public:
   typedef std::unique_ptr<VariantSourceInterface> FactoryResult;
@@ -30,6 +36,8 @@ class VariantSourceInterface {
   virtual ~VariantSourceInterface() {}
 
   virtual FileFormat file_format() const = 0;
+  virtual const VariantHeaderInterface& header() const = 0;
+
   virtual NextResult NextVariant() = 0;
 
   static FactoryResult MakeVariantSource(std::istream& istream);
