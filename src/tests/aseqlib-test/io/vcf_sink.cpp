@@ -30,6 +30,7 @@ class VCFVariantGeneratingTest : public ::testing::Test {
     header_.AddINFOField(VCFHeader::INFO::AC);
     header_.AddFILTERField(VCFHeader::FILTER::PASS);
     header_.AddFORMATField(VCFHeader::FORMAT::GT);
+    header_.AddFORMATField(VCFHeader::FORMAT::GQ);
   }
 
   VCFHeader header_;
@@ -68,15 +69,30 @@ TEST_F(VCFVariantGeneratingTest, GeneratesSitesOnlyVariants) {
     aseq::model::impl::VariantContextData data;
     data.contig_ = "1";
     data.pos_ = 1;
-    data.ids_ = VariantContext::IDs({ "rs100", "rs101" });
+    data.ids_ = VariantContext::IDs({"rs100", "rs101"});
     data.ref_ = Allele::A;
     data.alts_ = VariantContext::Alleles({Allele::T, Allele::C});
     data.qual_ = 100.0;
-    data.filters_ = VariantContext::Filters({ VCFHeader::FILTER::PASS });
-    data.attrs_.emplace(VCFHeader::INFO::AC, Attributes::Integers({ 1 }));
+    data.filters_ = VariantContext::Filters({VCFHeader::FILTER::PASS});
+    data.attrs_.emplace(VCFHeader::INFO::AC, Attributes::Integers({1}));
 
     VariantContext cxt(std::move(data));
     std::string line = GenerateVCFVariant(header_, cxt);
     EXPECT_EQ(std::string("1\t1\trs100;rs101\tA\tT,C\t100.0\tPASS\tAC=1"), line);
+  });
+}
+
+TEST_F(VCFVariantGeneratingTest, GeneratesVariantsWithSamples) {
+  header_.SetSamples({"Sample0", "Sample1"});
+
+  using aseq::io::impl::GenerateVCFVariant;
+  EXPECT_NO_THROW({
+    VariantContext cxt("1", 1, Allele::A, Allele::T);
+    cxt.AddGenotype(
+        "Sample0", Genotype::kRefAlt,
+        Attributes({{VCFHeader::FORMAT::GQ, Attributes::mapped_type(30)}}));
+    cxt.AddGenotype("Sample1", Genotype::kRefAltP, Attributes());
+    std::string line = GenerateVCFVariant(header_, cxt);
+    EXPECT_EQ(std::string("1\t1\t.\tA\tT\t.\t.\t.\tGT:GQ\t0/1:30\t0|1:."), line);
   });
 }

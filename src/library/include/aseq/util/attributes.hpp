@@ -37,6 +37,9 @@ class Attributes {
   typedef std::string String;
   typedef std::vector<String> Strings;
 
+  Attributes() {}
+  explicit Attributes(std::initializer_list<value_type> il) : attrs_(il) {}
+
   const_iterator find(const key_type& k) const { return attrs_.find(k); }
 
   const_iterator begin() const { return attrs_.begin(); }

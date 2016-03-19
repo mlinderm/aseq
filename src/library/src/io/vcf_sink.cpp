@@ -43,6 +43,7 @@ aseq::model::VariantContext::Qual const &,
 aseq::model::VariantContext::Filters const &,
 aseq::util::Attributes const &
 > VariantContext2VCF;
+
 // clang-format on
 
 namespace boost {
@@ -78,12 +79,47 @@ TRANSFORM(aseq::util::Attributes::Strings)
 template <>
 struct transform_attribute<aseq::model::VariantContext const, VariantContext2VCF, km::domain> {
   typedef VariantContext2VCF type;
-
   static type pre(aseq::model::VariantContext const &val) {
     return type(val.contig(), val.pos(), val.ids(), val.ref(), val.alts(), val.qual(),
                 val.filters(), val.attributes());
   }
 };
+template <>
+struct transform_attribute<aseq::model::Genotype::Alleles const, aseq::model::impl::PhasedIndices,
+                           km::domain> {
+  typedef aseq::model::impl::PhasedIndices const &type;
+  static type pre(aseq::model::Genotype::Alleles const &val) { return val.get(); }
+};
+
+template <>
+struct is_container<aseq::model::impl::PhasedIndices> : mpl::true_ {};
+
+template <>
+struct container_value<aseq::model::impl::PhasedIndices> {
+  typedef aseq::model::impl::PhasedIndices::Indices::value_type type;
+};
+
+template <>
+struct container_iterator<aseq::model::impl::PhasedIndices const> {
+  typedef aseq::model::impl::PhasedIndices::Indices::const_iterator type;
+};
+
+template <>
+struct begin_container<aseq::model::impl::PhasedIndices const> {
+  static aseq::model::impl::PhasedIndices::Indices::const_iterator call(
+      aseq::model::impl::PhasedIndices const &d) {
+    return d.indices_.begin();
+  }
+};
+
+template <>
+struct end_container<aseq::model::impl::PhasedIndices const> {
+  static aseq::model::impl::PhasedIndices::Indices::const_iterator call(
+      aseq::model::impl::PhasedIndices const &d) {
+    return d.indices_.end();
+  }
+};
+
 }  // namespace traits
 }  // namespace spirit
 }  // namespace boost
@@ -150,8 +186,8 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
     auto sep = km::lit('\t');
     auto missing = km::lit('.');
 
-    variant_  = vcf_line_(_val);
-    vcf_line_ =
+    variant_  = variant_fixed_fields_(_val);
+    variant_fixed_fields_ =
       chrom_                 << sep <<
       pos_                   << sep <<
       (id_        | missing) << sep <<
@@ -172,11 +208,30 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
     filter_ = km::string % ';';
     info_   = info_entry_ % ';';
 
-    allele_ = km::string;
-
     auto get_info_rule = phx::bind(&VCFVariantGenerator::KeyToRule, this, phx::ref(info_keys_), phx::at_c<0>(_val));
     info_entry_ %= km::eps[_a = get_info_rule] <<
             km::string << (km::eps(!_a) | (km::lit('=') << km::lazy(*_a)));
+
+    genotype_strings_.add
+            (model::Genotype::kNone, ".")
+            (model::Genotype::kNoCallNoCall, "./.")
+            (model::Genotype::kRefRef, "0/0")
+            (model::Genotype::kRefAlt, "0/1")
+            (model::Genotype::kAltAlt, "1|1")
+            (model::Genotype::kRefAltP, "0|1")
+            (model::Genotype::kAltRefP,"1|0")
+            ;
+
+
+    genotype_ = genotype_strings_ | genotype_alleles_(phx::bind(&AllelesToSep, _val)) | missing;
+    genotype_alleles_ =  genotype_allele_ % km::lit(_r1);
+    genotype_allele_  = km::int_;
+
+    auto is_val_empty = phx::bind(&util::Attributes::mapped_type::empty, phx::at_c<1>(_val));
+    sample_entry_ %= km::omit[km::int_] <<
+            km::lit(':') << (missing[_pass = is_val_empty] | km::lazy(*phx::at_c<0>(_val)));
+
+    allele_ = km::string;
 
     integer_value_    = km::attr_cast<Attributes::mapped_type const &, Attributes::Integer>(km::int_);
     integers_value_   = km::attr_cast<Attributes::mapped_type const &, Attributes::Integers>(km::int_ % ',');
@@ -190,12 +245,37 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
   }
 
   bool Generate(Iterator &itr, const model::VariantContext &cxt) {
-    return km::generate(itr, variant_, cxt);
+    if (!km::generate(itr, variant_, cxt)) {
+      throw util::file_write_error();
+    }
+    if (header_.NumSamples() > 0) {
+      format_keys_.clear();
+
+      km::generate(itr, km::lit("\tGT"));
+      for (auto &f : header_.FORMATValues()) {
+        if (f.id_ != VCFHeader::FORMAT::GT) {
+          km::generate(itr, km::lit(":") << km::string, f.id_);
+          format_keys_.emplace_back(f, GetGenerator(f));
+        }
+      }
+
+      for (size_t s = 0; s < header_.NumSamples(); s++) {
+        auto &gt = cxt.GetGenotype(header_.Sample(s));
+        km::generate(itr, km::lit('\t') << genotype_, gt.alleles());
+        for (auto &f : format_keys_) {
+          km::generate(itr, sample_entry_, f.second,
+                       gt.GetAttributeOr(f.first, util::Attributes::mapped_type()));
+        }
+      }
+      // km::generate(itr, format_, format_keys_);
+    }
+    return true;
   }
 
  private:
   typedef km::rule<Iterator, util::Attributes::mapped_type const &()> AttributeRule;
   typedef std::unordered_map<util::Attributes::key_type, AttributeRule const *> KeyToRuleMap;
+  typedef std::vector<std::pair<util::Attributes::key_type, AttributeRule const *> > KeyToRuleSeq;
 
   const AttributeRule *KeyToRule(KeyToRuleMap &map, const util::Attributes::key_type &key) {
     auto i = map.find(key);
@@ -225,13 +305,16 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
 #undef TORULE
   }
 
+  static char AllelesToSep(const model::Genotype::Alleles &alleles) {
+    return alleles.get().phased_ ? '|' : '/';
+  }
+
   km::rule<Iterator, model::VariantContext const &()> variant_;
-  km::rule<Iterator, VariantContext2VCF(const model::VariantContext &)> vcf_line_;
+  km::rule<Iterator, VariantContext2VCF(const model::VariantContext &)> variant_fixed_fields_;
 
   km::rule<Iterator, model::Contig> chrom_;
   km::rule<Iterator, model::Pos()> pos_;
   km::rule<Iterator, model::VariantContext::Alleles const &(const model::VariantContext &)> alt_;
-  km::rule<Iterator, model::Allele> allele_;
 
   km::rule<Iterator, model::VariantContext::IDs const &()> id_;
   km::rule<Iterator, model::VariantContext::Filters const &()> filter_;
@@ -239,10 +322,24 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
   km::rule<Iterator, util::Attributes::value_type const &(), km::locals<AttributeRule const *> >
       info_entry_;
 
+  // km::rule<Iterator, KeyToRuleSeq const &()> format_;
+  // km::rule<Iterator, typename KeyToRuleSeq::const_reference()> format_entry_;
+
+  km::rule<Iterator, model::Genotype::Alleles const &()> genotype_;
+  km::rule<Iterator, model::impl::PhasedIndices const &(char)> genotype_alleles_;
+  km::rule<Iterator, model::AlleleIndex const &()> genotype_allele_;
+  km::symbols<model::Genotype::Alleles, const char *,
+              std::unordered_map<model::Genotype::Alleles, const char *> > genotype_strings_;
+
+  km::rule<Iterator, fusion::vector<AttributeRule const *, util::Attributes::mapped_type const &> >
+      sample_entry_;
+
+  km::rule<Iterator, model::Allele> allele_;
   AttributeRule integer_value_, integers_value_, float_value_, floats_value_, character_value_,
       characters_value_, string_value_, strings_value_;
 
   KeyToRuleMap info_keys_;
+  KeyToRuleSeq format_keys_;
   VCFHeader &header_;
 };
 
