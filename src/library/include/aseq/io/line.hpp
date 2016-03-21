@@ -10,6 +10,8 @@
 #include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
 
+#include "aseq/io/file_format.hpp"
+
 namespace boost {
 namespace filesystem {
 
@@ -43,16 +45,16 @@ class ASCIILineWriterInterface {
  public:
   virtual ~ASCIILineWriterInterface() {}
 
-  virtual void WriteLine(const Line&) = 0;
-  void WriteLine(const char* line) {
-    WriteLine(boost::make_iterator_range(line, line + strlen(line)));
+  virtual void Write(const Line&) = 0;
+  void Write(const char* line) {
+    Write(boost::make_iterator_range(line, line + strlen(line)));
   }
-  void WriteLine(const std::string& line) {
-    WriteLine(boost::make_iterator_range(line.data(), line.data() + line.size()));
+  void Write(const std::string& line) {
+    Write(boost::make_iterator_range(line.data(), line.data() + line.size()));
   }
 
   static FactoryResult MakeLineWriter(std::ostream& ostream);
-  static FactoryResult MakeLineWriter(const boost::filesystem::path& file);
+  static FactoryResult MakeLineWriter(const boost::filesystem::path& file, FileFormat format=FileFormat::UNKNOWN);
 };
 
 }  // namespace io

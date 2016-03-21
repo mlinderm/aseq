@@ -3,12 +3,14 @@
 //
 
 #include <glog/logging.h>
+#include <boost/filesystem.hpp>
 
 #include "aseq/util/exception.hpp"
 #include "aseq/io/variant.hpp"
 #include "aseq/io/vcf.hpp"
 
 using namespace aseq::util;
+namespace fs = boost::filesystem;
 
 namespace aseq {
 namespace io {
@@ -23,6 +25,20 @@ VariantSinkInterface::FactoryResult VariantSinkInterface::MakeVariantSink(FileFo
     case FileFormat::VCF4_2:
       VCFHeader header(format);
       auto writer = ASCIILineWriterInterface::MakeLineWriter(ostream);
+      return std::make_unique<VCFSink>(header, std::move(writer));
+  }
+}
+
+VariantSinkInterface::FactoryResult VariantSinkInterface::MakeVariantSink(FileFormat format,
+                                                                          const fs::path& path) {
+  switch (format) {
+    default:
+      LOG(INFO) << "UNKNOWN or unsupported file format specified, defaulting to VCF 4.2 output";
+      return VariantSinkInterface::MakeVariantSink(FileFormat::VCF4_2, path);
+    case FileFormat::VCF4_1:
+    case FileFormat::VCF4_2:
+      VCFHeader header(format);
+      auto writer = ASCIILineWriterInterface::MakeLineWriter(path, format);
       return std::make_unique<VCFSink>(header, std::move(writer));
   }
 }

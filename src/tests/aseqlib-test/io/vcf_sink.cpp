@@ -62,7 +62,7 @@ TEST_F(VCFVariantGeneratingTest, GeneratesSitesOnlyVariants) {
   EXPECT_NO_THROW({
     VariantContext cxt("1", 1, Allele::A, Allele::T);
     std::string line = GenerateVCFVariant(header_, cxt);
-    EXPECT_EQ(std::string("1\t1\t.\tA\tT\t.\t.\t."), line);
+    EXPECT_EQ("1\t1\t.\tA\tT\t.\t.\t.", line);
   });
 
   EXPECT_NO_THROW({
@@ -78,7 +78,7 @@ TEST_F(VCFVariantGeneratingTest, GeneratesSitesOnlyVariants) {
 
     VariantContext cxt(std::move(data));
     std::string line = GenerateVCFVariant(header_, cxt);
-    EXPECT_EQ(std::string("1\t1\trs100;rs101\tA\tT,C\t100.0\tPASS\tAC=1"), line);
+    EXPECT_EQ("1\t1\trs100;rs101\tA\tT,C\t100.0\tPASS\tAC=1", line);
   });
 }
 
@@ -88,11 +88,44 @@ TEST_F(VCFVariantGeneratingTest, GeneratesVariantsWithSamples) {
   using aseq::io::impl::GenerateVCFVariant;
   EXPECT_NO_THROW({
     VariantContext cxt("1", 1, Allele::A, Allele::T);
-    cxt.AddGenotype(
-        "Sample0", Genotype::kRefAlt,
-        Attributes({{VCFHeader::FORMAT::GQ, Attributes::mapped_type(30)}}));
+    cxt.AddGenotype("Sample0", Genotype::kRefAlt,
+                    Attributes({{VCFHeader::FORMAT::GQ, Attributes::mapped_type(30)}}));
     cxt.AddGenotype("Sample1", Genotype::kRefAltP, Attributes());
     std::string line = GenerateVCFVariant(header_, cxt);
-    EXPECT_EQ(std::string("1\t1\t.\tA\tT\t.\t.\t.\tGT:GQ\t0/1:30\t0|1:."), line);
+    EXPECT_EQ("1\t1\t.\tA\tT\t.\t.\t.\tGT:GQ\t0/1:30\t0|1:.", line);
   });
+}
+
+TEST_F(VCFVariantGeneratingTest, GeneratesVCFWithSamples) {
+  header_.SetSamples({"Sample0", "Sample1"});
+  std::stringstream content;
+  ASSERT_NO_THROW({
+    VCFSink sink(header_, ASCIILineWriterInterface::MakeLineWriter(content));
+    {
+      VariantContext cxt("1", 1, Allele::A, Allele::T);
+      cxt.AddGenotype("Sample0", Genotype::kRefAlt, Attributes());
+      cxt.AddGenotype("Sample1", Genotype::kRefAltP, Attributes());
+      sink.PushVariant(cxt);
+    }
+  });
+
+  std::string line;
+  ASSERT_TRUE(std::getline(content, line));
+  EXPECT_EQ("##fileformat=VCFv4.2", line);
+  ASSERT_TRUE(std::getline(content, line));
+  EXPECT_EQ(
+      "##INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes, for each ALT "
+      "allele, in the same order as listed\">",
+      line);
+  ASSERT_TRUE(std::getline(content, line));
+  EXPECT_EQ("##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">", line);
+  ASSERT_TRUE(std::getline(content, line));
+  EXPECT_EQ("##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">", line);
+  ASSERT_TRUE(std::getline(content, line));
+  EXPECT_EQ("##FILTER=<ID=PASS,Description=\"PASSing\">", line);
+  ASSERT_TRUE(std::getline(content, line));
+  EXPECT_EQ("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSample0\tSample1", line);
+  ASSERT_TRUE(std::getline(content, line));
+  EXPECT_EQ("1\t1\t.\tA\tT\t.\t.\t.\tGT:GQ\t0/1:.\t0|1:.", line);
+  EXPECT_FALSE(std::getline(content, line));
 }

@@ -54,6 +54,7 @@ class VariantSinkInterface {
   virtual void PushVariant(const model::VariantContext&) = 0;
 
   static FactoryResult MakeVariantSink(FileFormat format, std::ostream& ostream);
+  static FactoryResult MakeVariantSink(FileFormat format, const boost::filesystem::path& path);
   static FactoryResult MakeVariantSink(const VariantSourceInterface& source, std::ostream& ostream);
 };
 }

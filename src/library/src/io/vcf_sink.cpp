@@ -157,7 +157,7 @@ struct VCFHeaderGenerator {
     required_columns_ %= lit("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO") << (
       km::eps(phx::size(_val) == 0)
       | (lit("\tFORMAT\t") << (km::stream % '\t'))
-    );
+    ) << km::eol;
     // clang-format on
   }
 
@@ -249,25 +249,24 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
       throw util::file_write_error();
     }
     if (header_.NumSamples() > 0) {
-      format_keys_.clear();
+      std::vector<std::pair<util::Attributes::key_type, AttributeRule const *> > format_keys;
 
       km::generate(itr, km::lit("\tGT"));
       for (auto &f : header_.FORMATValues()) {
         if (f.id_ != VCFHeader::FORMAT::GT) {
           km::generate(itr, km::lit(":") << km::string, f.id_);
-          format_keys_.emplace_back(f, GetGenerator(f));
+          format_keys.emplace_back(f, GetGenerator(f));
         }
       }
 
       for (size_t s = 0; s < header_.NumSamples(); s++) {
         auto &gt = cxt.GetGenotype(header_.Sample(s));
         km::generate(itr, km::lit('\t') << genotype_, gt.alleles());
-        for (auto &f : format_keys_) {
+        for (auto &f : format_keys) {
           km::generate(itr, sample_entry_, f.second,
                        gt.GetAttributeOr(f.first, util::Attributes::mapped_type()));
         }
       }
-      // km::generate(itr, format_, format_keys_);
     }
     return true;
   }
@@ -275,7 +274,6 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
  private:
   typedef km::rule<Iterator, util::Attributes::mapped_type const &()> AttributeRule;
   typedef std::unordered_map<util::Attributes::key_type, AttributeRule const *> KeyToRuleMap;
-  typedef std::vector<std::pair<util::Attributes::key_type, AttributeRule const *> > KeyToRuleSeq;
 
   const AttributeRule *KeyToRule(KeyToRuleMap &map, const util::Attributes::key_type &key) {
     auto i = map.find(key);
@@ -322,9 +320,6 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
   km::rule<Iterator, util::Attributes::value_type const &(), km::locals<AttributeRule const *> >
       info_entry_;
 
-  // km::rule<Iterator, KeyToRuleSeq const &()> format_;
-  // km::rule<Iterator, typename KeyToRuleSeq::const_reference()> format_entry_;
-
   km::rule<Iterator, model::Genotype::Alleles const &()> genotype_;
   km::rule<Iterator, model::impl::PhasedIndices const &(char)> genotype_alleles_;
   km::rule<Iterator, model::AlleleIndex const &()> genotype_allele_;
@@ -339,7 +334,7 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
       characters_value_, string_value_, strings_value_;
 
   KeyToRuleMap info_keys_;
-  KeyToRuleSeq format_keys_;
+
   VCFHeader &header_;
 };
 
@@ -376,19 +371,21 @@ VCFSink::VCFSink(const VCFHeader &header, Writer &&writer)
 
   km::generate(itr, gen.required_columns_, header_.samples_);
 
-  writer_->WriteLine(line);
+  writer_->Write(line);
 
   // Create the variant generator for subsequent use
   generator_ = std::make_unique<impl::Generator>(header_);
 }
 
 void VCFSink::PushVariant(const model::VariantContext &cxt) {
-  auto &gen = static_cast<impl::Generator &>(*generator_);
-
   std::string line;
-  auto itr = std::back_inserter(line);
-  gen.Generate(itr, cxt);
-  writer_->WriteLine(line);
+  {
+    auto itr = std::back_inserter(line);
+    auto &gen = static_cast<impl::Generator &>(*generator_);
+    gen.Generate(itr, cxt);
+    km::generate(itr, km::eol);
+  }
+  writer_->Write(line);
 }
 
 }  // namespace io
