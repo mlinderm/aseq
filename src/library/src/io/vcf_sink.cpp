@@ -73,6 +73,7 @@ TRANSFORM(aseq::util::Attributes::Floats)
 TRANSFORM(aseq::util::Attributes::Character)
 TRANSFORM(aseq::util::Attributes::Characters)
 TRANSFORM(aseq::util::Attributes::Strings)
+TRANSFORM(aseq::model::VariantContext::Filters)
 
 #undef TRANSFORM
 
@@ -139,6 +140,7 @@ struct VCFHeaderGenerator {
     field_number_.add BOOST_PP_SEQ_FOR_EACH(ENUM_THEN_STRING, BOOST_PP_NIL, FIELD_NUMBER);
     field_types_.add
       BOOST_PP_SEQ_FOR_EACH(ENUM_THEN_STRING, BOOST_PP_NIL, FIELD_TYPES)
+      (VCFHeader::Field::Type::FILTER, "String")
       (VCFHeader::Field::Type::GENOTYPE, "String")
       ;
 
@@ -241,6 +243,7 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
     characters_value_ = km::attr_cast<Attributes::mapped_type const &, Attributes::Characters>(km::char_ % ',');
     string_value_     = km::stream;
     strings_value_    = km::attr_cast<Attributes::mapped_type const &, Attributes::Strings>(km::string % ',');
+    filters_value_    = km::attr_cast<Attributes::mapped_type const &, model::VariantContext::Filters>(km::string % ';');
     // clang-format on
   }
 
@@ -295,6 +298,8 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
             << util::error_message(fmt::format("unsupported attribute type for {}", field));
       case VCFHeader::Field::Type::FLAG:
         return nullptr;
+      case VCFHeader::Field::Type::FILTER:
+        return &filters_value_;
         TORULE(INTEGER, &integer_value_, &integers_value_);
         TORULE(FLOAT, &float_value_, &floats_value_);
         TORULE(CHARACTER, &character_value_, &characters_value_);
@@ -331,7 +336,7 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
 
   km::rule<Iterator, model::Allele> allele_;
   AttributeRule integer_value_, integers_value_, float_value_, floats_value_, character_value_,
-      characters_value_, string_value_, strings_value_;
+      characters_value_, string_value_, strings_value_, filters_value_;
 
   KeyToRuleMap info_keys_;
 

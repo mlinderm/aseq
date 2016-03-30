@@ -47,14 +47,18 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   VariantContext &operator=(VariantContext &&);
 
   VariantContext(VariantContext &&, const Allele &ref);
+  template <typename Iterator>
+  VariantContext(VariantContext &&, const Contig &contig, Pos pos, const Allele &ref,
+                 Iterator alt_begin, Iterator alt_end);
 
   const Allele &ref() const { return ref_; }
   const Alleles &alts() const { return alts_; }
+  const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
   const IDs &ids() const { return ids_; }
   const Qual &qual() const { return qual_; }
   const Filters &filters() const { return filters_; }
 
-  const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
+  size_t NumAltAlleles() const { return alts_.size(); }
 
   bool IsMonoallelic() const { return alts_.empty(); }
   bool IsBiallelic() const { return alts_.size() == 1; }
@@ -113,6 +117,14 @@ struct VariantContextData {
   VariantContext::Filters filters_;
   util::Attributes attrs_;
 };
+}
+template<typename Iterator>
+inline VariantContext::VariantContext(VariantContext &&context, const Contig &contig, Pos pos,
+                               const Allele &ref, Iterator alt_begin, Iterator alt_end)
+    : VariantContext(std::move(context)) {
+  this->HasRegion::operator=(HasRegion(contig, pos, pos + ref.size() - 1));
+  ref_ = ref;
+  alts_.assign(alt_begin, alt_end);
 }
 
 }  // namespace model

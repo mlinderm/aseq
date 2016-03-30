@@ -39,7 +39,7 @@ set(sources
     io/reference_source.cpp
     model/variant_context.cpp
     model/allele.cpp
-    algorithm/variant.cpp
+    algorithm/variant-consensus.cpp
     io/fasta_sink.cpp
     algorithm/variant-normalize.cpp
     io/vcf_sink.cpp)

@@ -30,7 +30,7 @@ TEST(ASCIIStreamWriterTest, WritesLinesToASCIIStream) {
 
 class BGZipLineWriterTest : public ::testing::Test {
  protected:
-  BGZipLineWriterTest() : directory_(fs::unique_path()) {
+  BGZipLineWriterTest() : directory_(fs::temp_directory_path() / fs::unique_path()) {
     fs::create_directory(directory_);
     file_ = directory_ / "test.gz";
   }

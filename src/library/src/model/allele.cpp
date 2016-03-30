@@ -13,8 +13,11 @@ const Allele Allele::A("A"), Allele::G("G"), Allele::C("C"), Allele::T("T"), All
 const Allele Allele::MISSING(".");
 const Allele Allele::NON_REF("<NON_REF>");
 
-bool Allele::IsSymbolic() const {
-  return (front() == '<') && (back() == '>');
+bool Allele::IsSymbolic() const { return (front() == '<') && (back() == '>'); }
+
+Allele Allele::SubAllele(size_t pos, size_t len) const {
+  return Allele(substr(pos, len));
 }
+
 }  // namespace model
 }  // namespace aseq

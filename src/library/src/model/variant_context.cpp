@@ -67,7 +67,7 @@ VariantContext &VariantContext::operator=(VariantContext &&rhs) {
 
 VariantContext::VariantContext(VariantContext &&context, const Allele &ref)
     : VariantContext(std::move(context)) {
-    ref_ = ref;
+  ref_ = ref;
 }
 
 bool VariantContext::IsPASSing() const {

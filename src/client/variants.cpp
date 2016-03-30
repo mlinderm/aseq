@@ -7,7 +7,7 @@
 
 #include <docopt.h>
 #include <glog/logging.h>
-#include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 #include <cppformat/format.h>
 
 #include "aseq-version.h"
@@ -18,11 +18,15 @@
 
 #include "commands.hpp"
 
+namespace fs = boost::filesystem;
+
 namespace {
 const char USAGE[] = R"(aseq Variant analysis commands
 
 Usage:
   aseq variants (-h | --help)
+  aseq variants split [-l <N>] <file>
+  aseq variants normalize -R <ref> [--minimal] <file>
   aseq variants intervals [--flank <F>] <file>
   aseq variants consensus [--flank <F>] [--noREF | --noALT] -R <ref> <file>
   aseq variants table [--F <field>...] [--GF <field>...] <file>
@@ -35,7 +39,48 @@ Options:
   --noALT                    Don't emit alternate consensus sequence
   --F <field>                INFO field
   --GF <field>               Genotype (FORMAT) field
+  -l <N>                     Number of variants per split [default: 1]
+  --minimal                  Sites-only output
 )";
+
+int SplitMain(std::map<std::string, docopt::value>& args) {
+  using namespace aseq::io;
+
+  long n = args["-l"].asLong();
+  if (n < 0) {
+    std::cerr << "split count must be > 0" << std::endl;
+    std::cerr << USAGE;
+    return 1;
+  }
+
+  std::string pattern = (fs::temp_directory_path() / "%%%%-%%%%-%%%%-%%%%.vcf").native();
+
+  auto source = VariantSourceInterface::MakeVariantSource(args["<file>"].asString());
+  for (auto v = source->NextVariant(); v;) {
+    auto path = fs::unique_path(pattern);
+    auto sink = VariantSinkInterface::MakeVariantSink(*source, path);
+    for (size_t i = 0; i < n && v; i++) {
+      sink->PushVariant(*v);
+      v = source->NextVariant();
+    }
+    std::cout << path.native() << std::endl;
+  }
+
+  return 0;
+}
+
+int NormalizeMain(std::map<std::string, docopt::value>& args) {
+  using namespace aseq::io;
+  using namespace aseq::algorithm;
+
+  ReferenceSource ref(args["--ref"].asString());
+  auto source = VariantSourceInterface::MakeVariantSource(args["<file>"].asString());
+  auto sink = VariantSinkInterface::MakeVariantSink(*source, std::cout, args["--minimal"].asBool());
+  while (auto v = source->NextVariant()) {
+    sink->PushVariant(Normalize(ref, std::move(*v)));
+  }
+  return 0;
+}
 
 int IntervalsMain(std::map<std::string, docopt::value>& args) {
   using namespace aseq::io;
@@ -135,7 +180,11 @@ int VariantsMain(const std::vector<std::string>& argv) {
   std::map<std::string, docopt::value> args = docopt::docopt(USAGE, argv, true, ASEQ_VERSION);
 
   try {
-    if (args["consensus"].asBool()) {
+    if (args["split"].asBool()) {
+      return SplitMain(args);
+    } else if (args["normalize"].asBool()) {
+      return NormalizeMain(args);
+    } else if (args["consensus"].asBool()) {
       return ConsensusMain(args);
     } else if (args["intervals"].asBool()) {
       return IntervalsMain(args);

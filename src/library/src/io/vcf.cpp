@@ -39,5 +39,10 @@ std::ostream &operator<<(std::ostream &os, const VCFHeader::Field &field) {
   return (os << field.id_);
 }
 
+void VCFHeader::SetSitesOnly() {
+  FORMAT_.clear();
+  samples_.clear();
+}
+
 }  // namespace io
 }  // namespace aseq

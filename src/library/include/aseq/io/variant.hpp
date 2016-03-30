@@ -25,6 +25,8 @@ class VariantHeaderInterface {
  public:
   virtual size_t NumSamples() const = 0;
   virtual const model::Sample& Sample(size_t idx) const = 0;
+
+  virtual void SetSitesOnly() = 0;
 };
 
 class VariantSourceInterface {
@@ -55,7 +57,11 @@ class VariantSinkInterface {
 
   static FactoryResult MakeVariantSink(FileFormat format, std::ostream& ostream);
   static FactoryResult MakeVariantSink(FileFormat format, const boost::filesystem::path& path);
-  static FactoryResult MakeVariantSink(const VariantSourceInterface& source, std::ostream& ostream);
+  static FactoryResult MakeVariantSink(const VariantSourceInterface& source, std::ostream& ostream,
+                                       bool sites_only = false);
+  static FactoryResult MakeVariantSink(const VariantSourceInterface& source,
+                                       const boost::filesystem::path& path,
+                                       bool sites_only = false);
 };
 }
 }

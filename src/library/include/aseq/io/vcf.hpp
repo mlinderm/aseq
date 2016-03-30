@@ -98,6 +98,8 @@ class VCFHeader : public VariantHeaderInterface {
   const model::Sample& Sample(size_t idx) const override { return samples_.at(idx); }
   void SetSamples(std::initializer_list<model::Sample> samples) { samples_.assign(samples); }
 
+  void SetSitesOnly() override;
+
  private:
   FileFormat file_format_;
   Fields FILTER_, INFO_, FORMAT_;
@@ -114,9 +116,7 @@ namespace impl {
 template <typename Line>
 class VCFVariantParser;
 
-class VCFVariantGeneratorInterface {
-
-};
+class VCFVariantGeneratorInterface {};
 }  // namespace impl
 
 class VCFSource : public VariantSourceInterface {
@@ -125,6 +125,7 @@ class VCFSource : public VariantSourceInterface {
 
   VCFSource() = delete;
   VCFSource(FileFormat format, Reader&& reader);
+  virtual ~VCFSource() = default;
 
   virtual FileFormat file_format() const override;
   const VCFHeader& header() const override { return header_; }
@@ -151,6 +152,7 @@ class VCFSink : public VariantSinkInterface {
  public:
   VCFSink() = delete;
   VCFSink(const VCFHeader& header, Writer&& writer);
+  virtual ~VCFSink() = default;
 
   virtual void PushVariant(const model::VariantContext& context) override;
 

@@ -33,7 +33,11 @@ class Allele : public util::flyweight_string_no_track<allele_tag> {
   Allele& operator=(Allele&& allele) = default;
 
   bool IsSymbolic() const;
+  Allele SubAllele(size_t pos = 0, size_t len = std::string::npos) const;
 };
+
+inline Allele operator+(const std::string& lhs, Allele rhs) { return Allele(lhs + rhs.get()); }
+inline Allele operator+(Allele lhs, const std::string& rhs) { return Allele(lhs.get() + rhs); }
 
 }  // namespace model
 }  // namespace aseq
