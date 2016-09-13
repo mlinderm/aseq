@@ -78,6 +78,7 @@ namespace io {
 namespace impl {
 
 using model::VariantContext;
+static model::Genotype::Alleles::initializer genotype_alleles_init;
 
 // Helper values and macros for parsing VCF fields
 const auto kFieldSplitter = boost::is_char('\t');
@@ -100,10 +101,7 @@ bool IsDefined(const Iterator& begin, const Iterator& end) {
 
 template <typename Sequence, typename Range, typename Predicate>
 Sequence& SplitOptionalRange(Sequence& container, const Range& input, Predicate predicate) {
-  if (!IsDefined(input)) {
-    return container;
-  }
-  return boost::split(container, input, predicate);
+  return !IsDefined(input) ? container : boost::split(container, input, predicate);
 }
 
 // Boost Spirit X3 infrastructure
@@ -165,7 +163,7 @@ auto SetFormat = [&](auto& ctx) {
 #define FIELD_ADD(kind)                           \
   auto Add##kind##Field = [&](auto& ctx) {        \
     VCFHeader& header = x3::get<header_tag>(ctx); \
-    header.Add##kind##Field(x3::_attr(ctx));       \
+    header.Add##kind##Field(x3::_attr(ctx));      \
   };
 
 FIELD_ADD(FILTER)
@@ -228,7 +226,11 @@ x3::rule<class genotype_allele, int> const genotype_allele = "GT allele";
 x3::rule<class genotype_alleles, model::impl::PhasedIndices> const genotype_alleles = "GT";
 x3::rule<class genotype_value, Attributes::mapped_type> const genotype_value = "GT attribute";
 
+// Can't use static values in Genotype due to initialization issues
 const x3::symbols<Genotype::Alleles> kGenotypeStrings{
+    {".", Genotype::Alleles(VariantContext::kNoCallIdx)},
+    {"0", Genotype::Alleles(0)},
+    {"1", Genotype::Alleles(1)},
     {"./.", Genotype::Alleles(true, VariantContext::kNoCallIdx, VariantContext::kNoCallIdx)},
     {"0/0", Genotype::Alleles(true, 0, 0)},
     {"0/1", Genotype::Alleles(false, 0, 1)},
@@ -248,9 +250,8 @@ auto const integer_value_def  = missing | as<Attributes::Integer>()[x3::int_];
 auto const integers_value_def = missing | as<Attributes::Integers>()[x3::int_ % ','];
 auto const float_value_def    = missing | as<Attributes::Float>()[x3::float_];
 auto const floats_value_def   = missing | as<Attributes::Floats>()[x3::float_ % ','];
-auto const a_char             = char_;
-auto const char_value_def     = missing | as<Attributes::Character>()[a_char];
-auto const chars_value_def    = missing | as<Attributes::Characters>()[a_char % ','];
+auto const char_value_def     = missing | as<Attributes::Character>()[x3::char_];
+auto const chars_value_def    = missing | as<Attributes::Characters>()[x3::char_ % ','];
 
 auto missing_allele = [&](auto& ctx) { x3::_val(ctx) = VariantContext::kNoCallIdx; };
 auto init_phase     = [&](auto& ctx) { x3::_val(ctx).phased_ = true; };
@@ -258,7 +259,8 @@ auto update_phase   = [&](auto& ctx) { x3::_val(ctx).phased_ &= (x3::_attr(ctx) 
 auto add_allele     = [&](auto& ctx) { x3::_val(ctx).indices_.push_back(x3::_attr(ctx)); };
 
 // Use symbol table to catch common genotypes
-auto const genotype_value_def  = kGenotypeStrings | as<Genotype::Alleles>()[genotype_alleles];
+auto const genotype_value_def  =
+    (kGenotypeStrings >> x3::eoi) | as<Genotype::Alleles>()[genotype_alleles];
 auto const genotype_alleles_def =
     x3::eps[init_phase] >> (genotype_allele[add_allele] % x3::char_("/|")[update_phase]);
 auto const genotype_allele_def = x3::rule<class genotype_allele, int> {}
@@ -300,11 +302,7 @@ template <typename Iterator>
 struct FlagAttributeParser : public AttributeParser<Iterator> {
   FlagAttributeParser(const Attributes::key_type key) : AttributeParser<Iterator>(key) {}
   bool Parse(Iterator begin, const Iterator& end, Attributes::mapped_type& value) const {
-    if (begin == end) {
-      value = true;
-      return true;
-    } else
-      return false;
+    return (begin == end) ? value = true, true : false;
   }
 };
 
@@ -478,7 +476,7 @@ class VCFVariantParser {
           }
         }
 
-        context.AddGenotype(header_.Sample(g), alleles, std::move(sample_attr));
+        context.AddGenotype(header_.sample(g), alleles, std::move(sample_attr));
       }
       if (fields_itr != kSplitEnd) {
         throw file_parse_error() << error_message("more samples than specified in header");
@@ -542,7 +540,7 @@ class VCFVariantParser {
   }
 };
 
-VariantContext ParseVCFVariantLine(const std::string &line, VCFHeader &header) {
+VariantContext ParseVCFVariantLine(const std::string& line, VCFHeader& header) {
   VCFVariantParser<const std::string> parser(header);
   return parser.ParseVCFVariant(line);
 }
@@ -588,6 +586,12 @@ VCFSource::VCFSource(FileFormat format, VCFSource::Reader&& reader)
 }
 
 FileFormat VCFSource::file_format() const { return header_.file_format(); }
+
+
+
+void VCFSource::SetRegion(model::Contig contig, model::Pos pos, model::Pos end) {
+  reader_->SetRegion(contig, pos, end);
+}
 
 VariantSourceInterface::NextResult VCFSource::NextVariant() {
   if (auto line = reader_->ReadNextLine())

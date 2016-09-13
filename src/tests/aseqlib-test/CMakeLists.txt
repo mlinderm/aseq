@@ -42,7 +42,7 @@ set(sources
     algorithm/variant-consensus.cpp
     io/fasta_sink.cpp
     algorithm/variant-normalize.cpp
-    io/vcf_sink.cpp)
+    io/vcf_sink.cpp io/variant-adapters.cpp)
 
 
 # Build executable

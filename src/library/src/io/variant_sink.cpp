@@ -38,13 +38,13 @@ VariantSinkInterface::FactoryResult MakeVariantSink(
       throw file_write_error() << error_message("unsupported variant sink file format");
     case FileFormat::VCF4_1:
     case FileFormat::VCF4_2:
-      const VCFSource& vcf_source = dynamic_cast<const VCFSource&>(source);
+      const VCFHeader& vcf_header = dynamic_cast<const VCFHeader&>(source.header());
       if (sites_only) {
-        VCFHeader header = vcf_source.header();
-        header.SetSitesOnly();
-        return std::make_unique<VCFSink>(header, std::move(writer));
+        VCFHeader new_header = vcf_header;
+        new_header.SetSitesOnly();
+        return std::make_unique<VCFSink>(new_header, std::move(writer));
       } else
-        return std::make_unique<VCFSink>(vcf_source.header(), std::move(writer));
+        return std::make_unique<VCFSink>(vcf_header, std::move(writer));
   }
 }
 

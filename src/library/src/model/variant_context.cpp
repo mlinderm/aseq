@@ -83,6 +83,28 @@ const Genotype &VariantContext::GetGenotype(const Sample &sample) const {
   return *r;
 }
 
+Genotype VariantContext::GetGenotypeOrNoCall(const Sample &sample) const {
+  // TODO: Sort genotypes for quicker access
+  auto r = std::find_if(genotypes_.begin(), genotypes_.end(),
+                        [&](const Genotype &g) { return g.sample() == sample; });
+  return (r == genotypes_.end()) ? Genotype(*this, sample, Genotype::kNone, {}) : *r;
+}
+
+void VariantContext::MergeGenotypes(Genotypes &&genotypes) {
+  // Append genotypes and remove duplicates
+  for (auto &gt : genotypes) {
+    genotypes_.emplace_back(*this, std::move(gt));
+  }
+  // stable sort preferences original genotypes from the same sample
+  // TODO: preference call in new genotypes over NO_CALL in original genotypes
+  std::stable_sort(genotypes_.begin(), genotypes_.end(),
+                   [&](const Genotype &l, const Genotype &r) { return l.sample() < r.sample(); });
+  genotypes_.erase(
+      std::unique(genotypes_.begin(), genotypes_.end(), [&](const Genotype &l, const Genotype &r) {
+        return l.sample() == r.sample();
+      }), genotypes_.end());
+}
+
 std::ostream &operator<<(std::ostream &os, const VariantContext &vc) {
   os << vc.contig_ << ":" << vc.pos_ << vc.ref_;
   return os;

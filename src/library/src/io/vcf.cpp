@@ -25,6 +25,24 @@ const VCFHeader::Field::Number VCFHeader::Field::R, VCFHeader::Field::A, VCFHead
 #undef INFO_FIELD
 #undef FILTER_FIELD
 
+VCFHeader &VCFHeader::AddFields(const VCFHeader &other) {
+#define FIELD_COPY(KIND)                               \
+  for (auto &field : other.KIND##Values()) {           \
+    auto r = Add##KIND##Field(field);                  \
+    if (!r.second && !r.first.IsCompatible(field)) {   \
+      throw new util::incompatible_header_attribute(); \
+    }                                                  \
+  }
+
+  FIELD_COPY(INFO);
+  FIELD_COPY(FORMAT);
+  FIELD_COPY(FILTER);
+
+#undef FIELD_COPY
+
+  return *this;
+}
+
 std::pair<const VCFHeader::Field &, bool> VCFHeader::AddField(VCFHeader::Fields &fields,
                                                               const VCFHeader::Field &field) {
   auto r = fields.emplace(field.id_, field);

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <aseq/util/exception.hpp>
 #include "aseq/util/flyweight.hpp"
 #include "aseq/util/attributes.hpp"
 
@@ -24,9 +25,11 @@ struct PhasedIndices {
 
   PhasedIndices() : phased_(false) {}
   explicit PhasedIndices(bool phased) : phased_(phased) {}
+  explicit PhasedIndices(AlleleIndex a) : PhasedIndices(false, {a}) {}
   PhasedIndices(bool phased, AlleleIndex a1, AlleleIndex a2) : PhasedIndices(phased, {a1, a2}) {}
   PhasedIndices(bool phased, std::initializer_list<AlleleIndex> indices);
 
+  size_t Ploidy() const { return indices_.size(); }
   bool operator==(const PhasedIndices& rhs) const;
 
   bool phased_;
@@ -50,24 +53,37 @@ class Genotype : public util::HasAttributes {
       : Genotype(variant, sample, kNone, {}) {}
   Genotype(const VariantContext& variant, const Sample& sample, util::Attributes&& attr)
       : Genotype(variant, sample, kNone, std::move(attr)) {}
+  Genotype(const VariantContext& variant, const Sample& sample, const Alleles& alleles)
+      : Genotype(variant, sample, kNone, {}) {}
   Genotype(const VariantContext& variant, const Sample& sample, const Alleles& alleles,
            util::Attributes&& attr);
   Genotype(const VariantContext&, Genotype&&);
 
-  const VariantContext& variant_context() const { return variant_; }
+  const VariantContext& variant_context() const { return *variant_; }
   const Sample& sample() const { return sample_; }
   const Alleles& alleles() const { return alleles_; }
 
-  bool Phased() const { return alleles_.get().phased_; }
+  bool Phased() const { return indices().phased_; }
 
-  size_t Ploidy() const { return indices().size(); }
+  size_t Ploidy() const { return indices().Ploidy(); }
   bool Haploid() const { return Ploidy() == 1; }
   bool Diploid() const { return Ploidy() == 2; }
 
- private:
-  const impl::PhasedIndices::Indices& indices() const { return alleles_.get().indices_; }
+  friend void swap(Genotype& a, Genotype& b) {
+    if (a.variant_ != b.variant_) {
+      throw util::invalid_argument();
+    }
 
-  const VariantContext& variant_;
+    using std::swap;
+    swap(static_cast<util::HasAttributes&>(a), static_cast<util::HasAttributes&>(b));
+    swap(a.sample_, b.sample_);
+    swap(a.alleles_, b.alleles_);
+  }
+
+ private:
+  const impl::PhasedIndices& indices() const { return alleles_.get(); }
+
+  const VariantContext* variant_;
   Sample sample_;
   Alleles alleles_;
 };

@@ -35,6 +35,7 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   typedef boost::optional<float> Qual;
   typedef util::Attributes::key_type Filter;
   typedef std::vector<Filter> Filters;
+  typedef std::vector<Genotype> Genotypes;
 
  public:
   VariantContext(impl::VariantContextData &&data);
@@ -54,9 +55,6 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   const Allele &ref() const { return ref_; }
   const Alleles &alts() const { return alts_; }
   const Allele &alt(Alleles::size_type idx) const { return alts_.at(idx); }
-  const IDs &ids() const { return ids_; }
-  const Qual &qual() const { return qual_; }
-  const Filters &filters() const { return filters_; }
 
   size_t NumAltAlleles() const { return alts_.size(); }
 
@@ -64,18 +62,31 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   bool IsBiallelic() const { return alts_.size() == 1; }
   bool IsMultiAllelic() const { return alts_.size() > 1; }
 
+  const IDs &ids() const { return ids_; }
+
+  const Filters &filters() const { return filters_; }
+
+  const Qual &qual() const { return qual_; }
   bool HasQual() const { return static_cast<bool>(qual_); }
+  void SetQual(Qual::argument_type qual) { qual_ = qual; }
+  void SetQual(const Qual &qual) { qual_ = qual; }
+
   bool HasFilter() const { return !filters_.empty(); }
   bool IsPASSing() const;
 
+  const Genotypes &genotypes() const { return genotypes_; }
+  Genotypes &&genotypes() { return std::move(genotypes_); }
+
   size_t NumGenotypes() const { return genotypes_.size(); }
   const Genotype &GetGenotype(const Sample &sample) const;
+  Genotype GetGenotypeOrNoCall(const Sample &sample) const;
 
   template <typename... Args>
   Genotype &AddGenotype(Args &&... args) {
     genotypes_.emplace_back(*this, std::forward<Args>(args)...);
     return genotypes_.back();
   }
+  void MergeGenotypes(Genotypes &&);
 
   friend std::ostream &operator<<(std::ostream &, const VariantContext &);
 
@@ -88,7 +99,7 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   Qual qual_;
   Filters filters_;
 
-  std::vector<Genotype> genotypes_;
+  Genotypes genotypes_;
 
   friend class CompareVariants;
 };
@@ -118,9 +129,9 @@ struct VariantContextData {
   util::Attributes attrs_;
 };
 }
-template<typename Iterator>
+template <typename Iterator>
 inline VariantContext::VariantContext(VariantContext &&context, const Contig &contig, Pos pos,
-                               const Allele &ref, Iterator alt_begin, Iterator alt_end)
+                                      const Allele &ref, Iterator alt_begin, Iterator alt_end)
     : VariantContext(std::move(context)) {
   this->HasRegion::operator=(HasRegion(contig, pos, pos + ref.size() - 1));
   ref_ = ref;

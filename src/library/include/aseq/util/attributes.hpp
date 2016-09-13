@@ -42,8 +42,12 @@ class Attributes {
 
   const_iterator find(const key_type& k) const { return attrs_.find(k); }
 
+  iterator begin() { return attrs_.begin(); }
   const_iterator begin() const { return attrs_.begin(); }
+  iterator end() { return attrs_.end(); }
   const_iterator end() const { return attrs_.end(); }
+
+  mapped_type& operator[](const key_type& k) { return attrs_[k]; }
 
   template <typename T>
   const T& at(const key_type& k) const {
@@ -66,8 +70,10 @@ class Attributes {
     return i != attrs_.end() ? any_cast<const T&>(i->second) : v;
   }
 
-  mapped_type& operator[](const key_type& k) { return attrs_[k]; }
-
+  template <class InputIterator>
+  void insert(InputIterator first, InputIterator last) {
+    attrs_.insert(first, last);
+  }
   iterator erase(const_iterator i) { return attrs_.erase(i); }
   size_t erase(const key_type& k) { return attrs_.erase(k); }
 
@@ -115,6 +121,7 @@ class HasAttributes {
   HasAttributes() {}
   HasAttributes(Attributes&& attrs) : attrs_(std::move(attrs)) {}
 
+  Attributes& attributes() { return attrs_; }
   const Attributes& attributes() const { return attrs_; }
 
   bool HasAttribute(const Attributes::key_type& key) const {

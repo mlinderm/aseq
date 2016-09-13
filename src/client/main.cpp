@@ -46,45 +46,4 @@ int main(int argc, char* argv[]) {
   }
 
   return 1;
-
-  /*
-    using namespace aseq::io;
-
-    auto source1 = VariantSourceInterface::MakeVariantSource(args["<file1>"].asString());
-    auto source2 = VariantSourceInterface::MakeVariantSource(args["<file2>"].asString());
-    auto sink = VariantSinkInterface::MakeVariantSink(FileFormat::VCF4_2, std::cout);
-    aseq::model::CompareVariants cmp;
-
-    auto v1 = source1->NextVariant();
-    auto v2 = source2->NextVariant();
-    while (true) {
-      if (!v1) {
-        while (auto v = source2->NextVariant()) {
-          std::cerr << v.get() << std::endl;
-        }
-        break;
-      }
-      if (!v2) {
-        while (auto v = source1->NextVariant()) {
-          std::cerr << v.get() << std::endl;
-        }
-        break;
-      }
-      switch (cmp(v1.get(), v2.get())) {
-        case aseq::model::CompareVariants::result_type::BEFORE:
-          std::cerr << v1.get() << std::endl;
-          v1 = source1->NextVariant();
-          break;
-        case aseq::model::CompareVariants::result_type::AFTER:
-          std::cerr << v2.get() << std::endl;
-          v2 = source2->NextVariant();
-          break;
-        default:
-          std::cerr << v1.get() << "," << v2.get() << std::endl;
-          v1 = source1->NextVariant();
-          v2 = source2->NextVariant();
-          break;
-      }
-    }
-  */
 }

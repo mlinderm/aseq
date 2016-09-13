@@ -221,7 +221,7 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
             (model::Genotype::kRefAlt, "0/1")
             (model::Genotype::kAltAlt, "1|1")
             (model::Genotype::kRefAltP, "0|1")
-            (model::Genotype::kAltRefP,"1|0")
+            (model::Genotype::kAltRefP, "1|0")
             ;
 
 
@@ -263,7 +263,8 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
       }
 
       for (size_t s = 0; s < header_.NumSamples(); s++) {
-        auto &gt = cxt.GetGenotype(header_.Sample(s));
+        // TODO: Specify the OR here directly
+        const model::Genotype &gt = cxt.GetGenotypeOrNoCall(header_.sample(s));
         km::generate(itr, km::lit('\t') << genotype_, gt.alleles());
         for (auto &f : format_keys) {
           km::generate(itr, sample_entry_, f.second,

@@ -39,6 +39,7 @@ class TabixLineReaderTest : public ::testing::Test {
 TEST_F(TabixLineReaderTest, ReadsLinesFromTabixFile) {
   auto reader = ASCIILineReaderInterface::MakeLineReader(file_);
   ASSERT_TRUE(reader);
+  EXPECT_TRUE(reader->IsIndexed());
 
   for (int i = 1; i <= 3; i++) {
     auto line = reader->ReadNextLine();

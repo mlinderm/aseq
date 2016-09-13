@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <vector>
 
 #include <docopt.h>
 #include <glog/logging.h>
@@ -12,6 +13,7 @@
 
 #include "aseq-version.h"
 #include "aseq/io/variant.hpp"
+#include "aseq/io/variant-adapters.hpp"
 #include "aseq/io/reference.hpp"
 #include "aseq/io/fasta.hpp"
 #include "aseq/algorithm/variant.hpp"
@@ -25,6 +27,7 @@ const char USAGE[] = R"(aseq Variant analysis commands
 
 Usage:
   aseq variants (-h | --help)
+  aseq variants merge -R <ref> <files>...
   aseq variants split [-l <N>] <file>
   aseq variants normalize -R <ref> [--minimal] <file>
   aseq variants intervals [--flank <F>] <file>
@@ -42,6 +45,47 @@ Options:
   -l <N>                     Number of variants per split [default: 1]
   --minimal                  Sites-only output
 )";
+
+int MergeMain(std::map<std::string, docopt::value>& args) {
+  using namespace aseq::io;
+  using namespace aseq::algorithm;
+
+  ReferenceSource ref(args["--ref"].asString());
+
+  auto files = args["<files>"].asStringList();
+  if (files.size() == 1) {
+    auto source = VariantSourceInterface::MakeVariantSource(files[0]);
+    auto sink = VariantSinkInterface::MakeVariantSink(*source, std::cout);
+    while (auto v = source->NextVariant()) {
+      // TODO: Add merge info field, and any modifications to sample names
+      sink->PushVariant(*v);
+    }
+  } else {
+    std::vector<VariantSourceInterface::FactoryResult> sources;
+
+    for (const auto& file : files) {
+      sources.push_back(VariantSourceInterface::MakeVariantSource(file));
+    }
+    // TODO: Manipulate samples and other aspects of the header to achieve desired
+    // merging properties, e.g. unique sample names
+    while (sources.size() > 1) {
+      // Assume the vector is sorted in priority order, e.g. back() is the lowest priority
+      auto lower_priority = std::move(sources.back());
+      sources.pop_back();
+      auto higher_priority = std::move(sources.back());
+      sources.pop_back();
+      sources.push_back(VariantMergeSourceInterface::MakeMergeVariantSource(
+          std::move(higher_priority), std::move(lower_priority)));
+    }
+    auto& source = sources.front();
+    auto sink = VariantSinkInterface::MakeVariantSink(*source, std::cout);
+    while (auto v = source->NextVariant()) {
+      sink->PushVariant(*v);
+    }
+  }
+
+  return 0;
+}
 
 int SplitMain(std::map<std::string, docopt::value>& args) {
   using namespace aseq::io;
@@ -151,7 +195,7 @@ int VariantsToTableMain(std::map<std::string, docopt::value>& args) {
   }
   for (size_t i = 0; i < header.NumSamples(); i++) {
     for (size_t j = 0; j < GFs.size(); j++) {
-      fmt::print(std::cout, ((j == 0 && Fs.empty()) ? "{}.{}" : "\t{}.{}"), header.Sample(i),
+      fmt::print(std::cout, ((j == 0 && Fs.empty()) ? "{}.{}" : "\t{}.{}"), header.sample(i),
                  GFs[j]);
     }
   }
@@ -163,7 +207,7 @@ int VariantsToTableMain(std::map<std::string, docopt::value>& args) {
                  v->GetAttributeOr<Attributes::mapped_type>(Fs[i], missing));
     }
     for (size_t i = 0; i < header.NumSamples(); i++) {
-      auto& gt = v->GetGenotype(header.Sample(i));
+      auto& gt = v->GetGenotype(header.sample(i));
       for (size_t j = 0; j < GFs.size(); j++) {
         fmt::print(std::cout, ((j == 0 && Fs.empty()) ? "{}" : "\t{}"),
                    gt.GetAttributeOr<Attributes::mapped_type>(GFs[j], missing));
@@ -180,7 +224,9 @@ int VariantsMain(const std::vector<std::string>& argv) {
   std::map<std::string, docopt::value> args = docopt::docopt(USAGE, argv, true, ASEQ_VERSION);
 
   try {
-    if (args["split"].asBool()) {
+    if (args["merge"].asBool()) {
+      return MergeMain(args);
+    } else if (args["split"].asBool()) {
       return SplitMain(args);
     } else if (args["normalize"].asBool()) {
       return NormalizeMain(args);

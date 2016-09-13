@@ -19,5 +19,6 @@ model::VariantContext Normalize(io::ReferenceSource& ref, model::VariantContext&
 
 
 std::string Consensus(io::ReferenceSource& ref, const model::VariantContext& cxt, size_t flank);
+
 }
 }

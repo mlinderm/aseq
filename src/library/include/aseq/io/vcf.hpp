@@ -39,6 +39,9 @@ class VCFHeader : public VariantHeaderInterface {
 
     bool IsFlag() const { return nmbr_ == 0 && type_ == Type::FLAG; }
     bool IsScalar() const { return nmbr_ == 1; }
+    bool IsCompatible(const Field& other) const {
+      return id_ == other.id_ && nmbr_ == other.nmbr_ && type_ == other.type_;
+    }
 
     ID id_;
     Number nmbr_;
@@ -65,10 +68,13 @@ class VCFHeader : public VariantHeaderInterface {
   };
 
   typedef std::unordered_map<util::Attributes::key_type, Field> Fields;
+  typedef std::vector<model::Sample> Samples;
 
  public:
   VCFHeader() : file_format_(FileFormat::UNKNOWN) {}
   VCFHeader(FileFormat type) : file_format_(type) {}
+
+  VCFHeader& AddFields(const VCFHeader& other);
 
   FileFormat file_format() const { return file_format_; }
   void set_file_format(const FileFormat& format) { file_format_ = format; }
@@ -77,15 +83,16 @@ class VCFHeader : public VariantHeaderInterface {
   static std::pair<const Field&, bool> AddField(Fields&, const Field&);
   static bool HasField(const Fields&, const Fields::key_type&);
 
-#define FIELD(prefix)                                                    \
-  Fields& prefix() { return prefix##_; }                                 \
-  boost::select_second_const_range<Fields> prefix##Values() const {      \
-    return boost::adaptors::values(prefix##_);                           \
-  }                                                                      \
-  std::pair<const Field&, bool> Add##prefix##Field(const Field& field) { \
-    return AddField(prefix##_, field);                                   \
-  };                                                                     \
-  bool Has##prefix##Field(const Fields::key_type& key) const { return HasField(prefix##_, key); }
+#define FIELD(prefix)                                                                             \
+  Fields& prefix() { return prefix##_; }                                                          \
+  boost::select_second_const_range<Fields> prefix##Values() const {                               \
+    return boost::adaptors::values(prefix##_);                                                    \
+  }                                                                                               \
+  std::pair<const Field&, bool> Add##prefix##Field(const Field& field) {                          \
+    return AddField(prefix##_, field);                                                            \
+  };                                                                                              \
+  bool Has##prefix##Field(const Fields::key_type& key) const { return HasField(prefix##_, key); } \
+  const Field& prefix##Field(const Fields::key_type& key) const { return prefix##_.at(key); }
 
   FIELD(FILTER)
   FIELD(INFO)
@@ -93,17 +100,23 @@ class VCFHeader : public VariantHeaderInterface {
 
 #undef FIELD
 
-  // Sample methods
-  size_t NumSamples() const override { return samples_.size(); }
-  const model::Sample& Sample(size_t idx) const override { return samples_.at(idx); }
-  void SetSamples(std::initializer_list<model::Sample> samples) { samples_.assign(samples); }
+  // sample methods
+  const Samples& samples() const { return samples_; }
+  const model::Sample& sample(size_t idx) const override { return samples_.at(idx); }
 
+  size_t NumSamples() const override { return samples_.size(); }
+
+  void SetSamples(std::initializer_list<model::Sample> samples) { samples_.assign(samples); }
+  template <class InputIterator>
+  void SetSamples(InputIterator first, InputIterator last) {
+    samples_.assign(first, last);
+  }
   void SetSitesOnly() override;
 
  private:
   FileFormat file_format_;
   Fields FILTER_, INFO_, FORMAT_;
-  std::vector<model::Sample> samples_;
+  Samples samples_;
 
   friend class VCFSource;
   friend class VCFSink;
@@ -130,6 +143,8 @@ class VCFSource : public VariantSourceInterface {
   virtual FileFormat file_format() const override;
   const VCFHeader& header() const override { return header_; }
 
+  virtual bool IsIndexed() const override { return reader_->IsIndexed(); }
+  virtual void SetRegion(model::Contig contig, model::Pos pos, model::Pos end) override;
   virtual NextResult NextVariant() override;
 
  private:

@@ -58,6 +58,7 @@ struct fxn_ptr_table {
   void (*clone)(void* const*, void**);
   void (*move)(void* const*, void**);
   std::basic_ostream<Char>& (*stream_out)(std::basic_ostream<Char>&, void* const*);
+  bool (*equals)(void* const*, void* const*);
 };
 
 // static functions for small value-types
@@ -81,6 +82,9 @@ struct fxns<boost::mpl::true_> {
     static std::basic_ostream<Char>& stream_out(std::basic_ostream<Char>& o, void* const* obj) {
       o << *reinterpret_cast<T const*>(obj);
       return o;
+    }
+    static bool equals(void* const* lhs, void* const* rhs) {
+      return *reinterpret_cast<T const*>(lhs) == *reinterpret_cast<T const*>(rhs);
     }
   };
 };
@@ -110,6 +114,9 @@ struct fxns<boost::mpl::false_> {
       o << **reinterpret_cast<T* const*>(obj);
       return o;
     }
+    static bool equals(void* const* lhs, void* const* rhs) {
+      return **reinterpret_cast<T* const*>(lhs) == **reinterpret_cast<T* const*>(rhs);
+    }
   };
 };
 
@@ -125,7 +132,8 @@ struct get_table {
         fxns<is_small>::template type<T, Char>::destruct,
         fxns<is_small>::template type<T, Char>::clone,
         fxns<is_small>::template type<T, Char>::move,
-        fxns<is_small>::template type<T, Char>::stream_out};
+        fxns<is_small>::template type<T, Char>::stream_out,
+        fxns<is_small>::template type<T, Char>::equals};
     return &static_table;
   }
 };
@@ -136,6 +144,8 @@ template <typename Char>
 inline std::basic_ostream<Char>& operator<<(std::basic_ostream<Char>& o, empty const&) {
   return o;
 }
+
+inline bool operator==(empty const&, empty const&) { return true; }
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -268,6 +278,14 @@ class basic_any {
   friend inline std::basic_ostream<Char_>& operator<<(std::basic_ostream<Char_>& o,
                                                       basic_any const& obj) {
     return obj.table->stream_out(o, &obj.object);
+  }
+
+  friend inline bool operator==(basic_any const& lhs, basic_any const& rhs) {
+    return lhs.table == rhs.table && lhs.table->equals(&lhs.object, &rhs.object);
+  }
+
+  friend inline bool operator!=(basic_any const& lhs, basic_any const& rhs) {
+    return !(lhs == rhs);
   }
 
 #ifndef BOOST_NO_MEMBER_TEMPLATE_FRIENDS

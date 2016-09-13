@@ -28,9 +28,11 @@ struct exception_base : virtual std::exception, virtual boost::exception {
 };
 
 // Exception types
+class indexed_access_not_supported : public exception_base {};
 class invalid_argument : public exception_base {};
 class file_parse_error : public exception_base {};
 class file_write_error : public exception_base {};
+class incompatible_header_attribute : public exception_base {};
 
 class no_such_sample : public exception_base {};
 }

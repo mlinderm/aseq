@@ -53,7 +53,7 @@ TEST_F(VCFVariantGeneratingTest, GeneratesVCFHeaderWithSamples) {
   EXPECT_TRUE(header.HasFORMATField(VCFHeader::FORMAT::GT));
   ASSERT_EQ(2, header.NumSamples());
   for (size_t i = 0; i < 2; i++) {
-    EXPECT_EQ(Sample(fmt::format("Sample{}", i)), header.Sample(i));
+    EXPECT_EQ(Sample(fmt::format("Sample{}", i)), header.sample(i));
   }
 }
 
@@ -79,6 +79,14 @@ TEST_F(VCFVariantGeneratingTest, GeneratesSitesOnlyVariants) {
     VariantContext cxt(std::move(data));
     std::string line = GenerateVCFVariant(header_, cxt);
     EXPECT_EQ("1\t1\trs100;rs101\tA\tT,C\t100.0\tPASS\tAC=1", line);
+  });
+
+  EXPECT_NO_THROW({
+    header_.AddINFOField(VCFHeader::INFO::CIEND);
+    VariantContext cxt("1", 1, Allele::A, Allele::T);
+    cxt.SetAttribute(VCFHeader::INFO::CIEND, Attributes::Integers({-5, 4}));
+    std::string line = GenerateVCFVariant(header_, cxt);
+    EXPECT_EQ("1\t1\t.\tA\tT\t.\t.\tCIEND=-5,4", line);
   });
 }
 

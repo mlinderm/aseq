@@ -54,11 +54,11 @@ const Genotype::Alleles Genotype::kNone,
 
 Genotype::Genotype(const VariantContext& variant, const Sample& sample, const Alleles& alleles,
                    util::Attributes&& attr)
-    : HasAttributes(std::move(attr)), variant_(variant), sample_(sample), alleles_(alleles) {}
+    : HasAttributes(std::move(attr)), variant_(&variant), sample_(sample), alleles_(alleles) {}
 
 Genotype::Genotype(const VariantContext& variant, Genotype&& other)
     : util::HasAttributes(other),
-      variant_(variant),
+      variant_(&variant),
       sample_(std::move(other.sample_)),
       alleles_(std::move(other.alleles_)) {}
 }

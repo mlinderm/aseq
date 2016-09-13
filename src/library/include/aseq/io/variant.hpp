@@ -10,6 +10,7 @@
 
 #include "aseq/io/file_format.hpp"
 #include "aseq/io/line.hpp"
+#include "aseq/model/region.hpp"
 #include "aseq/model/variant_context.hpp"
 
 namespace boost {
@@ -24,7 +25,7 @@ namespace io {
 class VariantHeaderInterface {
  public:
   virtual size_t NumSamples() const = 0;
-  virtual const model::Sample& Sample(size_t idx) const = 0;
+  virtual const model::Sample& sample(size_t idx) const = 0;
 
   virtual void SetSitesOnly() = 0;
 };
@@ -40,6 +41,10 @@ class VariantSourceInterface {
   virtual FileFormat file_format() const = 0;
   virtual const VariantHeaderInterface& header() const = 0;
 
+  virtual bool IsIndexed() const { return false; }
+  virtual void SetRegion(model::Contig contig, model::Pos pos, model::Pos end) {
+    throw util::indexed_access_not_supported();
+  }
   virtual NextResult NextVariant() = 0;
 
   static FactoryResult MakeVariantSource(std::istream& istream);

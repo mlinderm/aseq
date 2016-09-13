@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include <boost/filesystem.hpp>
+#include <cppformat/format.h>
 #include <htslib/hts.h>
 #include <htslib/tbx.h>
 #include <htslib/kstring.h>
@@ -13,6 +14,7 @@
 
 #include "aseq/util/exception.hpp"
 #include "aseq/io/line.hpp"
+#include "aseq/model/region.hpp"
 
 extern "C" {
 
@@ -88,13 +90,29 @@ class TabixLineReader : public ASCIILineReaderInterface {
 
   ~TabixLineReader() { free(ks_release(&line_)); }
 
+  virtual bool IsIndexed() const override { return true; }
+
+  virtual void SetRegion(model::Contig contig, model::Pos pos, model::Pos end) override {
+    // Create iterator
+    int tid = tbx_name2id(index_.get(), contig.c_str());
+    if (tid < 0) {
+      throw invalid_argument() << error_message(
+          fmt::format("contig '{}' not found in index", contig));
+    }
+    iter_.reset(
+        tbx_itr_queryi(index_.get(), tid, static_cast<int>(pos - 1), static_cast<int>(end)));
+  }
+
   virtual NextResult ReadNextLine() override {
     // If we have a live iterator, use that to read from the file
-    if (iter_ && tbx_itr_next(file_.get(), index_.get(), iter_.get(), &line_) < 0) {
+    if (iter_ && tbx_itr_next(file_.get(), index_.get(), iter_.get(), &line_) >= 0) {
+      return NextResult(boost::make_iterator_range(line_.s, line_.s + line_.l));
+    } else if (iter_) {
       iter_.reset(nullptr);
       return NextResult();
-    } else
-      return NextResult(boost::make_iterator_range(line_.s, line_.s + line_.l));
+    } else {
+      return NextResult();
+    }
   }
 
  private:
@@ -121,5 +139,5 @@ ASCIILineReaderInterface::FactoryResult ASCIILineReaderInterface::MakeLineReader
   else
     return std::make_unique<impl::ASCIIStreamLineReader>(path);
 }
-} // io namespace
-} // aseq namespace
+}  // io namespace
+}  // aseq namespace

@@ -10,7 +10,9 @@
 #include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
 
+#include "aseq/util/exception.hpp"
 #include "aseq/io/file_format.hpp"
+#include "aseq/model/region.hpp"
 
 namespace boost {
 namespace filesystem {
@@ -32,6 +34,10 @@ class ASCIILineReaderInterface {
  public:
   virtual ~ASCIILineReaderInterface() {}
 
+  virtual bool IsIndexed() const { return false; }
+  virtual void SetRegion(model::Contig contig, model::Pos pos, model::Pos end) {
+    throw util::indexed_access_not_supported();
+  }
   virtual NextResult ReadNextLine() = 0;
 
   static FactoryResult MakeLineReader(std::istream& istream);
@@ -46,15 +52,14 @@ class ASCIILineWriterInterface {
   virtual ~ASCIILineWriterInterface() {}
 
   virtual void Write(const Line&) = 0;
-  void Write(const char* line) {
-    Write(boost::make_iterator_range(line, line + strlen(line)));
-  }
+  void Write(const char* line) { Write(boost::make_iterator_range(line, line + strlen(line))); }
   void Write(const std::string& line) {
     Write(boost::make_iterator_range(line.data(), line.data() + line.size()));
   }
 
   static FactoryResult MakeLineWriter(std::ostream& ostream);
-  static FactoryResult MakeLineWriter(const boost::filesystem::path& file, FileFormat format=FileFormat::UNKNOWN);
+  static FactoryResult MakeLineWriter(const boost::filesystem::path& file,
+                                      FileFormat format = FileFormat::UNKNOWN);
 };
 
 }  // namespace io

@@ -67,6 +67,12 @@ TEST_P(VCFSitesOnlySourceTest, IteratesAndParsesVariants) {
 
   r = source->NextVariant();
   EXPECT_FALSE(r);  // There are three variants in the file
+
+  EXPECT_NO_THROW({
+    // Can call next past end without error
+    r = source->NextVariant();
+    EXPECT_FALSE(r);
+  });
 }
 
 INSTANTIATE_TEST_CASE_P(VCFSitesOnly, VCFSitesOnlySourceTest,
@@ -128,3 +134,46 @@ TEST_P(VCFSpecificationSourceTest, IteratesAndParsesVariants) {
 
 INSTANTIATE_TEST_CASE_P(VCFSpecification, VCFSpecificationSourceTest,
                         ::testing::Values("vcf_specification.vcf"));
+
+class VCFSVSourceQueryTest : public ::testing::Test {
+ protected:
+  VCFSVSourceQueryTest() : file_(test_inputs_g) { file_ /= "sv_sites_only.vcf.gz"; }
+
+  virtual void SetUp() {
+    ASSERT_TRUE(fs::exists(file_));
+    source_ = VariantSourceInterface::MakeVariantSource(file_);
+    ASSERT_TRUE(source_);
+    ASSERT_TRUE(source_->IsIndexed());
+  }
+
+  fs::path file_;
+  VariantSourceInterface::FactoryResult source_;
+};
+
+TEST_F(VCFSVSourceQueryTest, QueriesPreciseSV) {
+  EXPECT_NO_THROW({
+    source_->SetRegion("1", 2827698, 2827698);
+    auto r = source_->NextVariant();
+    ASSERT_TRUE(r);
+
+    r = source_->NextVariant();
+    EXPECT_FALSE(r);  // There should only be one variant in that region
+  });
+
+  EXPECT_NO_THROW({
+    source_->SetRegion("2", 321880, 321890);
+    auto r = source_->NextVariant();
+    ASSERT_TRUE(r);
+
+    r = source_->NextVariant();
+    EXPECT_FALSE(r);  // There should only be one variant in that region
+  });
+}
+
+TEST_F(VCFSVSourceQueryTest, ShouldNotReturnSVOutsideQuery) {
+  EXPECT_NO_THROW({
+    source_->SetRegion("1", 2827709, 2827709);  // Variant ends at 2827708
+    auto r = source_->NextVariant();
+    EXPECT_FALSE(r);
+  });
+}

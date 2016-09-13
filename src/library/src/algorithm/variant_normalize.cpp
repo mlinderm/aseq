@@ -105,8 +105,8 @@ VariantContext LeftAlignAndTrimAlleles(io::ReferenceSource& ref, VariantContext&
 
     if (any_empty) {
       // Need to prepend bases to all alleles, query reference for prepend sequence
-      model::Pos new_end = std::max(1LL, new_pos - 1);
-      new_pos = std::max(1LL, new_pos - 10);
+      model::Pos new_end = std::max(static_cast<model::Pos>(1), new_pos - 1);
+      new_pos = std::max(static_cast<model::Pos>(1), new_pos - 10);
       std::string prepend = ref.Sequence(cxt.contig(), new_pos, new_end);
       for (auto& a : new_alleles) {
         a = prepend + a;

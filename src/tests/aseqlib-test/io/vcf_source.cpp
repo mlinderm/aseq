@@ -52,19 +52,34 @@ TEST(VCFHeaderParsingTest, ParsesKeyValueLines) {
   });
 }
 
+TEST(VCFHeaderParsingTest, ParsesFixedLengthVectorHeaderLines) {
+  EXPECT_NO_THROW({
+    // clang-format off
+    std::stringstream content(
+        "##fileformat=VCFv4.2\n"
+        "##INFO=<ID=CIEND,Number=2,Type=Integer,Description=\"Confidence interval around END for imprecise variants\">\n"
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+    );
+    // clang-format on
+    VCFSource source(FileFormat::VCF4_2, ASCIILineReaderInterface::MakeLineReader(content));
+    auto& header = source.header();
+    ASSERT_TRUE(header.HasINFOField(VCFHeader::INFO::CIEND));
+    auto& field = header.INFOField(VCFHeader::INFO::CIEND);
+    EXPECT_EQ(2, field.nmbr_);
+  });
+}
+
 class VCFVariantParsingTest : public ::testing::Test {
  public:
   VCFVariantParsingTest() : header_(FileFormat::VCF4_2) {}
 
  protected:
   virtual void SetUp() {
-    header_.AddINFOField(VCFHeader::INFO::END);
-    header_.AddINFOField(VCFHeader::INFO::SVTYPE);
-    header_.AddINFOField(VCFHeader::INFO::SVLEN);
-    header_.AddINFOField(VCFHeader::INFO::CIPOS);
-    header_.AddINFOField(VCFHeader::INFO::CIEND);
-    header_.AddINFOField(VCFHeader::INFO::HOMLEN);
-    header_.AddINFOField(VCFHeader::INFO::HOMSEQ);
+    for (auto f : {VCFHeader::INFO::END, VCFHeader::INFO::SVTYPE, VCFHeader::INFO::SVLEN,
+                   VCFHeader::INFO::CIPOS, VCFHeader::INFO::CIEND, VCFHeader::INFO::HOMLEN,
+                   VCFHeader::INFO::HOMSEQ})
+      header_.AddINFOField(f);
+
     for (auto f : {VCFHeader::FORMAT::GT, VCFHeader::FORMAT::DP, VCFHeader::FORMAT::FT,
                    VCFHeader::FORMAT::GQ, VCFHeader::FORMAT::HQ})
       header_.AddFORMATField(f);
@@ -95,8 +110,8 @@ TEST_F(VCFVariantParsingTest, ParsesComplexSitesOnlyVariant) {
   });
   EXPECT_NO_THROW({
     std::string line(
-        "1\t2827694\trs2376870\tCGTGGATGCGGGGAC\tC\t.\tPASS\tSVTYPE=DEL;END=2827762;HOMLEN=1;"
-        "HOMSEQ=G;SVLEN=-68");
+        "1\t2827694\trs2376870\tCGTGGATGCGGGGAC\tC\t.\tPASS\tSVTYPE=DEL;END=2827708;HOMLEN=1;"
+        "HOMSEQ=G;SVLEN=-14");
     VariantContext context = ParseVCFVariantLine(line, header_);
   });
   EXPECT_NO_THROW({
@@ -104,8 +119,8 @@ TEST_F(VCFVariantParsingTest, ParsesComplexSitesOnlyVariant) {
         "2\t321682\t.\tT\t<DEL>\t6\tPASS\tSVTYPE=DEL;END=321887;SVLEN=-205;CIPOS=-56,20;CIEND=-10,"
         "62");
     VariantContext context = ParseVCFVariantLine(line, header_);
+    EXPECT_EQ(321887, context.end());
   });
-
   EXPECT_NO_THROW({
     std::string line(
         "2\t14477084\t.\tC\t<DEL:ME:ALU>\t6\tPASS\tSVTYPE=DEL;END=14477381;SVLEN=-297;CIPOS=-22,18;"
@@ -116,6 +131,13 @@ TEST_F(VCFVariantParsingTest, ParsesComplexSitesOnlyVariant) {
   EXPECT_NO_THROW({
     std::string line("2\t321681\tbnd_W\tG\tG]17:198982]\t6\tPASS\tSVTYPE=BND");
     VariantContext context = ParseVCFVariantLine(line, header_);
+  });
+
+  EXPECT_NO_THROW({
+    std::string line(
+        "1\t83484909\t220\tN\t<DEL>\t196.12\tPASS\tCIEND=-5,4;END=83485005;SVLEN=-96;SVTYPE=DEL");
+    VariantContext context = ParseVCFVariantLine(line, header_);
+    EXPECT_EQ(Attributes::Integers({-5, 4}), context.GetAttribute<Attributes::Integers>("CIEND"));
   });
 }
 
@@ -172,14 +194,14 @@ TEST_F(VCFVariantParsingTest, ParsesMinimalVariantWithSamples) {
       auto& gt = context.GetGenotype("NA12878");
       ASSERT_EQ(&context, &gt.variant_context());
       EXPECT_FALSE(gt.HasAttribute(VCFHeader::FORMAT::GT));
-      EXPECT_TRUE(gt.alleles() == Genotype::kRefAlt);
+      EXPECT_EQ(Genotype::kRefAlt, gt.alleles());
       EXPECT_FALSE(gt.Phased());
       EXPECT_TRUE(gt.Diploid());
     }
 
     {
       auto& gt = context.GetGenotype("NA12891");
-      EXPECT_TRUE(gt.alleles() == Genotype::kRefAltP);
+      EXPECT_EQ(Genotype::kRefAltP, gt.alleles());
       EXPECT_TRUE(gt.Phased());
       EXPECT_TRUE(gt.Diploid());
     }
