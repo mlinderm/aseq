@@ -127,7 +127,7 @@ VariantContext LeftAlignAndTrimAlleles(io::ReferenceSource& ref, VariantContext&
   model::Contig new_contig = cxt.contig();
   VariantContext new_cxt(std::move(cxt), new_contig, new_pos + head_clip, new_alleles.front(),
                          new_alleles.begin() + 1, new_alleles.end());
-  return std::move(new_cxt);
+  return new_cxt;
 };
 
 VariantContext Normalize(io::ReferenceSource& ref, VariantContext&& cxt) {

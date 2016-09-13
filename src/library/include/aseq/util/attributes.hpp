@@ -28,7 +28,7 @@ class Attributes {
   typedef AttrMap::const_iterator const_iterator;
 
   // Common attribute types (for convenience)
-  typedef int32_t Integer;
+  typedef int Integer;
   typedef std::vector<Integer> Integers;
   typedef float Float;
   typedef std::vector<Float> Floats;

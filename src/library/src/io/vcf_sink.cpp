@@ -2,16 +2,16 @@
 // Created by Michael Linderman on 12/16/15.
 //
 #define BOOST_SPIRIT_USE_PHOENIX_V3 1
-#include <boost/spirit/include/karma.hpp>
-#include <boost/spirit/include/phoenix.hpp>
-#include <boost/spirit/repository/include/karma_confix.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/fusion/include/std_pair.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/spirit/include/karma.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#include <boost/spirit/repository/include/karma_confix.hpp>
 
-#include <glog/logging.h>
 #include <cppformat/format.h>
+#include <glog/logging.h>
 
 #include "aseq/io/vcf.hpp"
 #include "vcf_io.def"
@@ -235,14 +235,16 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
 
     allele_ = km::string;
 
+    // For unclear reasons, passing a single character to list generator, e.g. % ',',
+    // results in an unpredictable character being generated
     integer_value_    = km::attr_cast<Attributes::mapped_type const &, Attributes::Integer>(km::int_);
-    integers_value_   = km::attr_cast<Attributes::mapped_type const &, Attributes::Integers>(km::int_ % ',');
+    integers_value_   = km::attr_cast<Attributes::mapped_type const &, Attributes::Integers>(km::int_ % ",");
     float_value_      = km::attr_cast<Attributes::mapped_type const &, Attributes::Float>(km::float_);
-    floats_value_     = km::attr_cast<Attributes::mapped_type const &, Attributes::Floats>(km::float_ % ',');
+    floats_value_     = km::attr_cast<Attributes::mapped_type const &, Attributes::Floats>(km::float_ % ",");
     character_value_  = km::attr_cast<Attributes::mapped_type const &, Attributes::Character>(km::char_);
-    characters_value_ = km::attr_cast<Attributes::mapped_type const &, Attributes::Characters>(km::char_ % ',');
+    characters_value_ = km::attr_cast<Attributes::mapped_type const &, Attributes::Characters>(km::char_ % ",");
     string_value_     = km::stream;
-    strings_value_    = km::attr_cast<Attributes::mapped_type const &, Attributes::Strings>(km::string % ',');
+    strings_value_    = km::attr_cast<Attributes::mapped_type const &, Attributes::Strings>(km::string % ",");
     filters_value_    = km::attr_cast<Attributes::mapped_type const &, model::VariantContext::Filters>(km::string % ';');
     // clang-format on
   }
@@ -330,7 +332,8 @@ class VCFVariantGenerator : public VCFVariantGeneratorInterface {
   km::rule<Iterator, model::impl::PhasedIndices const &(char)> genotype_alleles_;
   km::rule<Iterator, model::AlleleIndex const &()> genotype_allele_;
   km::symbols<model::Genotype::Alleles, const char *,
-              std::unordered_map<model::Genotype::Alleles, const char *> > genotype_strings_;
+              std::unordered_map<model::Genotype::Alleles, const char *> >
+      genotype_strings_;
 
   km::rule<Iterator, fusion::vector<AttributeRule const *, util::Attributes::mapped_type const &> >
       sample_entry_;

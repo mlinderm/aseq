@@ -2,9 +2,9 @@
 // Created by Michael Linderman on 3/6/16.
 //
 
+#include <cppformat/format.h>
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
-#include <cppformat/format.h>
 
 #include "aseq/io/vcf.hpp"
 #include "aseq/model/variant_context.hpp"
@@ -73,12 +73,13 @@ TEST_F(VCFVariantGeneratingTest, GeneratesSitesOnlyVariants) {
     data.ref_ = Allele::A;
     data.alts_ = VariantContext::Alleles({Allele::T, Allele::C});
     data.qual_ = 100.0;
-    data.filters_ = VariantContext::Filters({VCFHeader::FILTER::PASS});
+    data.filters_ = VariantContext::Filters({VCFHeader::FILTER::PASS, "FAIL"});
     data.attrs_.emplace(VCFHeader::INFO::AC, Attributes::Integers({1}));
 
+    header_.AddFILTERField(VCFHeader::Field("FAIL","Failed filter"));
     VariantContext cxt(std::move(data));
     std::string line = GenerateVCFVariant(header_, cxt);
-    EXPECT_EQ("1\t1\trs100;rs101\tA\tT,C\t100.0\tPASS\tAC=1", line);
+    EXPECT_EQ("1\t1\trs100;rs101\tA\tT,C\t100.0\tPASS;FAIL\tAC=1", line);
   });
 
   EXPECT_NO_THROW({

@@ -155,13 +155,13 @@ x3::rule<class filter_or_alt_attributes, VCFHeader::Field> const filter_or_alt_a
     "VCF header field with ID and description attributes";
 
 struct header_tag {};
-auto SetFormat = [&](auto& ctx) {
+auto SetFormat = [](auto& ctx) {
   VCFHeader& header = x3::get<header_tag>(ctx);
   header.set_file_format(x3::_attr(ctx));
 };
 
 #define FIELD_ADD(kind)                           \
-  auto Add##kind##Field = [&](auto& ctx) {        \
+  auto Add##kind##Field = [](auto& ctx) {        \
     VCFHeader& header = x3::get<header_tag>(ctx); \
     header.Add##kind##Field(x3::_attr(ctx));      \
   };
@@ -253,10 +253,10 @@ auto const floats_value_def   = missing | as<Attributes::Floats>()[x3::float_ % 
 auto const char_value_def     = missing | as<Attributes::Character>()[x3::char_];
 auto const chars_value_def    = missing | as<Attributes::Characters>()[x3::char_ % ','];
 
-auto missing_allele = [&](auto& ctx) { x3::_val(ctx) = VariantContext::kNoCallIdx; };
-auto init_phase     = [&](auto& ctx) { x3::_val(ctx).phased_ = true; };
-auto update_phase   = [&](auto& ctx) { x3::_val(ctx).phased_ &= (x3::_attr(ctx) == '|'); };
-auto add_allele     = [&](auto& ctx) { x3::_val(ctx).indices_.push_back(x3::_attr(ctx)); };
+auto missing_allele = [](auto& ctx) { x3::_val(ctx) = VariantContext::kNoCallIdx; };
+auto init_phase     = [](auto& ctx) { x3::_val(ctx).phased_ = true; };
+auto update_phase   = [](auto& ctx) { x3::_val(ctx).phased_ &= (x3::_attr(ctx) == '|'); };
+auto add_allele     = [](auto& ctx) { x3::_val(ctx).indices_.push_back(x3::_attr(ctx)); };
 
 // Use symbol table to catch common genotypes
 auto const genotype_value_def  =
@@ -595,7 +595,7 @@ void VCFSource::SetRegion(model::Contig contig, model::Pos pos, model::Pos end) 
 
 VariantSourceInterface::NextResult VCFSource::NextVariant() {
   if (auto line = reader_->ReadNextLine())
-    return NextResult(std::move(parser_->ParseVCFVariant(*line)));
+    return NextResult(parser_->ParseVCFVariant(*line));
   else
     return NextResult();
 }

@@ -5,14 +5,14 @@ cmake_minimum_required(VERSION 3.1.3 FATAL_ERROR)
 # Project description and (meta) information
 
 set(META_PROJECT_NAME        "aseq")
-set(META_PROJECT_DESCRIPTION "Sequencing Data Analysis Tools")
+set(META_PROJECT_DESCRIPTION "Another Sequencing Data Analysis Tool")
 set(META_VERSION_MAJOR       "0")
 set(META_VERSION_MINOR       "1")
 set(META_VERSION_PATCH       "0")
 set(META_VERSION             "${META_VERSION_MAJOR}.${META_VERSION_MINOR}.${META_VERSION_PATCH}")
-set(META_AUTHOR_ORGANIZATION "Icahn School of Medicine at Mount Sinai")
-set(META_AUTHOR_DOMAIN       "mssm.edu")
-set(META_AUTHOR_MAINTAINER   "michael.linderman@mssm.edu")
+set(META_AUTHOR_ORGANIZATION "Middlebury College")
+set(META_AUTHOR_DOMAIN       "middlebury.edu")
+set(META_AUTHOR_MAINTAINER   "mlinderman@middlebury.edu")
 
 string(TOUPPER ${META_PROJECT_NAME} META_PROJECT_NAME_UPPER)
 
