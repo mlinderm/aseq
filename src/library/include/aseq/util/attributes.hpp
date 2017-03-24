@@ -157,7 +157,7 @@ class HasAttributes {
 
   void EraseAttribute(const Attributes::key_type& key) { attrs_.erase(key); }
 
- protected:
+ public:
   Attributes attrs_;
 };
 

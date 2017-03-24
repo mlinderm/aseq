@@ -85,14 +85,8 @@ TEST(VariantConsensus, AppliesSymbolicDeletion) {
       .WillRepeatedly(::testing::Return("AGCTAGCTAG"));
 
   {
-    aseq::model::impl::VariantContextData data;
-    data.contig_ = "1";
-    data.pos_ = 1000;
-    data.end_ = 1010;
-    data.ref_ = Allele::C;
-    data.alts_ = {Allele("<DEL>")};
-    data.attrs_.emplace(VCFHeader::INFO::SVTYPE, Attributes::String("DEL"));
-    VariantContext cxt(std::move(data));
+    VariantContext cxt("1", 1000, 1010, Allele::C, { "<DEL>" });
+    cxt.SetAttribute(VCFHeader::INFO::SVTYPE, Attributes::String("DEL"));
     EXPECT_NO_THROW({
       std::string seq = Consensus(ref, cxt, 10);
       EXPECT_EQ(std::string("AGCTAGCTAGCAGCTAGCTAG"), seq);

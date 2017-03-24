@@ -2,18 +2,18 @@
 // Created by Michael Linderman on 12/13/15.
 //
 
-#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/spirit/home/x3.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/spirit/home/x3.hpp>
 
-#include <glog/logging.h>
 #include <cppformat/format.h>
+#include <glog/logging.h>
 
-#include "aseq/util/exception.hpp"
 #include "aseq/io/vcf.hpp"
 #include "aseq/model/variant_context.hpp"
+#include "aseq/util/exception.hpp"
 
 namespace x3 = boost::spirit::x3;
 
@@ -161,7 +161,7 @@ auto SetFormat = [](auto& ctx) {
 };
 
 #define FIELD_ADD(kind)                           \
-  auto Add##kind##Field = [](auto& ctx) {        \
+  auto Add##kind##Field = [](auto& ctx) {         \
     VCFHeader& header = x3::get<header_tag>(ctx); \
     header.Add##kind##Field(x3::_attr(ctx));      \
   };
@@ -406,20 +406,18 @@ class VCFVariantParser {
       fields[i] = *fields_itr;
     }
 
-    model::impl::VariantContextData data;
+    // Core variant fields (CHROM, POS, REF, ALT) and also INFO (to pick up END)
+    model::Contig chrom(fields[0]);
 
-    // Core variant fields (CHROM, POS, REF, ALT)
-    data.contig_ = fields[0];
-    ParseRange(fields[1], parser::pos, data.pos_);
-    data.ref_ = fields[3];
-    SplitOptionalRange(data.alts_, fields[4], kCommaSplitter);
+    model::Pos pos, end;
+    ParseRange(fields[1], parser::pos, pos);
 
-    // Context fields (ID, QUAL, FILTER)
-    SplitOptionalRange(data.ids_, fields[2], kSemicolonSplitter);
-    ParseRange(fields[5], parser::qual, data.qual_);
-    SplitOptionalRange(data.filters_, fields[6], kSemicolonSplitter);
+    model::Allele ref(fields[3]);  // TODO: Validate alleles
+    VariantContext::Alleles alt;
+    SplitOptionalRange(alt, fields[4], kCommaSplitter);
 
     // INFO field
+    util::Attributes info;
     for (auto i = boost::make_split_iterator(fields[7], kInfoFinder); i != kSplitEnd; ++i) {
       auto equals = boost::find(*i, kEqualsFinder);
       Attributes::key_type key(i->begin(), equals.begin());
@@ -427,16 +425,22 @@ class VCFVariantParser {
       // Look up attribute key and parse value with returned parser, detect if flag (or valued)
       // in case the attribute is not yet defined
       auto& parser = FindOrAddParser(info_keys_, key, header_.INFO(), equals.begin() == i->end());
-      parser.Parse(equals.end(), i->end(), data.attrs_);
+      parser.Parse(equals.end(), i->end(), info);
     }
 
-    // Fix up variant based on INFO fields
-    data.end_ = data.attrs_.at_or<util::Attributes::Integer>(VCFHeader::INFO::END,
-                                                             (data.pos_ + data.ref_.size()) - 1);
+    // Fix up variant end based on INFO fields (if present)
+    end = info.at_or<util::Attributes::Integer>(VCFHeader::INFO::END, pos + ref.size() - 1);
 
-    VariantContext context(std::move(data));
+    VariantContext cxt(chrom, pos, end, ref, alt.begin(), alt.end());
 
-    // FORMAT and genotypes (if relevant)
+    cxt.attrs_ = std::move(info);  // Set INFO attributes
+
+    // Context fields (ID, QUAL, FILTER)
+    SplitOptionalRange(cxt.ids_, fields[2], kSemicolonSplitter);
+    ParseRange(fields[5], parser::qual, cxt.qual_);
+    SplitOptionalRange(cxt.filters_, fields[6], kSemicolonSplitter);
+
+    // FORMAT and genotypes (if present)
     if (header_.NumSamples() > 0) {
       if (fields_itr == kSplitEnd) {
         throw file_parse_error() << error_message("missing FORMAT field");
@@ -476,14 +480,14 @@ class VCFVariantParser {
           }
         }
 
-        context.AddGenotype(header_.sample(g), alleles, std::move(sample_attr));
+        cxt.AddGenotype(header_.sample(g), alleles, std::move(sample_attr));
       }
       if (fields_itr != kSplitEnd) {
         throw file_parse_error() << error_message("more samples than specified in header");
       }
     }
 
-    return context;
+    return cxt;
   }
 
  private:
@@ -586,8 +590,6 @@ VCFSource::VCFSource(FileFormat format, VCFSource::Reader&& reader)
 }
 
 FileFormat VCFSource::file_format() const { return header_.file_format(); }
-
-
 
 void VCFSource::SetRegion(model::Contig contig, model::Pos pos, model::Pos end) {
   reader_->SetRegion(contig, pos, end);

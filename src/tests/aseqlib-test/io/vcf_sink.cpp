@@ -66,18 +66,14 @@ TEST_F(VCFVariantGeneratingTest, GeneratesSitesOnlyVariants) {
   });
 
   EXPECT_NO_THROW({
-    aseq::model::impl::VariantContextData data;
-    data.contig_ = "1";
-    data.pos_ = 1;
-    data.ids_ = VariantContext::IDs({"rs100", "rs101"});
-    data.ref_ = Allele::A;
-    data.alts_ = VariantContext::Alleles({Allele::T, Allele::C});
-    data.qual_ = 100.0;
-    data.filters_ = VariantContext::Filters({VCFHeader::FILTER::PASS, "FAIL"});
-    data.attrs_.emplace(VCFHeader::INFO::AC, Attributes::Integers({1}));
+    header_.AddFILTERField(VCFHeader::Field("FAIL", "Failed filter"));
 
-    header_.AddFILTERField(VCFHeader::Field("FAIL","Failed filter"));
-    VariantContext cxt(std::move(data));
+    VariantContext cxt("1", 1, Allele::A, {Allele::T, Allele::C});
+    cxt.ids_ = VariantContext::IDs({"rs100", "rs101"});
+    cxt.qual_ = 100.0;
+    cxt.filters_ = VariantContext::Filters({VCFHeader::FILTER::PASS, "FAIL"});
+    cxt.SetAttribute(VCFHeader::INFO::AC, Attributes::Integers({1}));
+
     std::string line = GenerateVCFVariant(header_, cxt);
     EXPECT_EQ("1\t1\trs100;rs101\tA\tT,C\t100.0\tPASS;FAIL\tAC=1", line);
   });

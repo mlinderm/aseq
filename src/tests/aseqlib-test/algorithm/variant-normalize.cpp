@@ -2,13 +2,13 @@
 // Created by Michael Linderman on 3/6/16.
 //
 
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
-#include "aseq/io/vcf.hpp"
-#include "aseq/model/variant_context.hpp"
 #include "aseq/algorithm/variant.hpp"
 #include "aseq/io/reference-mock.hpp"
+#include "aseq/io/vcf.hpp"
+#include "aseq/model/variant_context.hpp"
 
 using namespace aseq::model;
 using namespace aseq::algorithm;
@@ -20,13 +20,9 @@ TEST(VariantUpdateRefAllele, UpdatesNAllele) {
   EXPECT_CALL(ref, Sequence(Contig("1"), 2, 2)).WillRepeatedly(::testing::Return("A"));
 
   EXPECT_NO_THROW({
-    aseq::model::impl::VariantContextData data;
-    data.contig_ = "1";
-    data.pos_ = 2;
-    data.ref_ = Allele::N;
-    data.alts_ = VariantContext::Alleles({"<DEL>"});
-    data.attrs_.emplace(VCFHeader::INFO::END, Attributes::Integer(100));
-    VariantContext cxt(std::move(data));
+    VariantContext cxt("1", 2, 100, Allele::N, {"<DEL>"});
+    cxt.SetAttribute(VCFHeader::INFO::END, Attributes::Integer(100));
+
     VariantContext new_cxt = UpdateREFAllele(ref, std::move(cxt));
     EXPECT_EQ(Allele::A, new_cxt.ref());
     EXPECT_EQ(Allele("<DEL>"), new_cxt.alt(0));

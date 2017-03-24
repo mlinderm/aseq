@@ -10,17 +10,6 @@ namespace model {
 constexpr AlleleIndex VariantContext::kNoCallIdx, VariantContext::kNonRefIdx,
     VariantContext::kRefIdx, VariantContext::kFirstAltIdx;
 
-VariantContext::VariantContext(impl::VariantContextData &&data)
-    : util::HasAttributes(std::move(data.attrs_)),
-      HasRegion(std::move(data.contig_), data.pos_, data.end_),
-      ref_(std::move(data.ref_)),
-      alts_(std::move(data.alts_)),
-      ids_(std::move(data.ids_)),
-      qual_(std::move(data.qual_)),
-      filters_(std::move(data.filters_)) {
-  // TODO: Validate data
-}
-
 VariantContext::VariantContext(const Contig &contig, int64_t pos, const Allele &ref)
     : VariantContext(contig, pos, ref, {}) {}
 
@@ -30,19 +19,22 @@ VariantContext::VariantContext(const Contig &contig, int64_t pos, const Allele &
 
 VariantContext::VariantContext(const Contig &contig, Pos pos, const Allele &ref,
                                std::initializer_list<Allele> alts)
-    : HasRegion(contig, pos, pos + ref.size() - 1), ref_(ref), alts_(alts) {
+    : VariantContext(contig, pos, pos + ref.size() - 1, ref, alts) {}
+
+VariantContext::VariantContext(const Contig &contig, Pos pos, Pos end, const Allele &ref,
+                               std::initializer_list<Allele> alts)
+    : HasRegion(contig, pos, end), ref_(ref), alts_(alts) {
   // TODO: Validate data
 }
 
 VariantContext::VariantContext(VariantContext &&other)
     : util::HasAttributes(other),
       HasRegion(other),
-      ref_(std::move(other.ref_)),
-      alts_(std::move(other.alts_)),
       ids_(std::move(other.ids_)),
       qual_(std::move(other.qual_)),
-      filters_(std::move(other.filters_))
-
+      filters_(std::move(other.filters_)),
+      ref_(std::move(other.ref_)),
+      alts_(std::move(other.alts_))
 {
   genotypes_.reserve(other.genotypes_.size());
   for (Genotype &g : other.genotypes_) {
@@ -53,11 +45,11 @@ VariantContext::VariantContext(VariantContext &&other)
 VariantContext &VariantContext::operator=(VariantContext &&rhs) {
   this->HasRegion::operator=(std::move(rhs));
   this->util::HasAttributes::operator=(std::move(rhs));
-  ref_ = std::move(rhs.ref_);
-  alts_ = std::move(rhs.alts_);
   ids_ = std::move(rhs.ids_);
   qual_ = std::move(rhs.qual_);
   filters_ = std::move(rhs.filters_);
+  ref_ = std::move(rhs.ref_);
+  alts_ = std::move(rhs.alts_);
   genotypes_.clear();
   for (Genotype &g : rhs.genotypes_) {
     genotypes_.emplace_back(*this, std::move(g));
@@ -68,6 +60,11 @@ VariantContext &VariantContext::operator=(VariantContext &&rhs) {
 VariantContext::VariantContext(VariantContext &&context, const Allele &ref)
     : VariantContext(std::move(context)) {
   ref_ = ref;
+}
+
+VariantContext &VariantContext::SetFlag(VariantContext::Flags flags) {
+  flags_ |= std::underlying_type<Flags>::type(flags);
+  return *this;
 }
 
 bool VariantContext::IsPASSing() const {
@@ -100,9 +97,9 @@ void VariantContext::MergeGenotypes(Genotypes &&genotypes) {
   std::stable_sort(genotypes_.begin(), genotypes_.end(),
                    [&](const Genotype &l, const Genotype &r) { return l.sample() < r.sample(); });
   genotypes_.erase(
-      std::unique(genotypes_.begin(), genotypes_.end(), [&](const Genotype &l, const Genotype &r) {
-        return l.sample() == r.sample();
-      }), genotypes_.end());
+      std::unique(genotypes_.begin(), genotypes_.end(),
+                  [&](const Genotype &l, const Genotype &r) { return l.sample() == r.sample(); }),
+      genotypes_.end());
 }
 
 std::ostream &operator<<(std::ostream &os, const VariantContext &vc) {

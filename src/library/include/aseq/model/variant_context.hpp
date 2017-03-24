@@ -4,23 +4,19 @@
 
 #pragma once
 
-#include <vector>
 #include <iosfwd>
+#include <vector>
 
 #include <boost/optional.hpp>
 
-#include "aseq/util/exception.hpp"
-#include "aseq/util/attributes.hpp"
-#include "aseq/model/region.hpp"
 #include "aseq/model/allele.hpp"
 #include "aseq/model/genotype.hpp"
+#include "aseq/model/region.hpp"
+#include "aseq/util/attributes.hpp"
+#include "aseq/util/exception.hpp"
 
 namespace aseq {
 namespace model {
-
-namespace impl {
-struct VariantContextData;
-}  // namespace impl
 
 class CompareVariants;
 
@@ -37,12 +33,18 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   typedef std::vector<Filter> Filters;
   typedef std::vector<Genotype> Genotypes;
 
+  enum class Flags : unsigned int { kNone = 0, kSymbolic = 0x1 };
+
  public:
-  VariantContext(impl::VariantContextData &&data);
   VariantContext(const Contig &contig, Pos pos, const Allele &ref);
   VariantContext(const Contig &contig, Pos pos, const Allele &ref, const Allele &alt);
   VariantContext(const Contig &contig, Pos pos, const Allele &ref,
                  std::initializer_list<Allele> alts);
+  VariantContext(const Contig &contig, Pos pos, Pos end, const Allele &ref,
+                 std::initializer_list<Allele> alts);
+  template <typename Iterator>
+  VariantContext(const Contig &contig, Pos pos, Pos end, const Allele &ref, Iterator alt_begin,
+                 Iterator alt_end);
 
   VariantContext(VariantContext &&);
   VariantContext &operator=(VariantContext &&);
@@ -51,6 +53,10 @@ class VariantContext : public util::HasAttributes, public HasRegion {
   template <typename Iterator>
   VariantContext(VariantContext &&, const Contig &contig, Pos pos, const Allele &ref,
                  Iterator alt_begin, Iterator alt_end);
+
+  // Flags
+  bool flags(Flags flags) const { return flags_ & std::underlying_type<Flags>::type(flags); }
+  VariantContext &SetFlag(Flags flags);
 
   const Allele &ref() const { return ref_; }
   const Alleles &alts() const { return alts_; }
@@ -64,13 +70,12 @@ class VariantContext : public util::HasAttributes, public HasRegion {
 
   const IDs &ids() const { return ids_; }
 
-  const Filters &filters() const { return filters_; }
-
   const Qual &qual() const { return qual_; }
   bool HasQual() const { return static_cast<bool>(qual_); }
   void SetQual(Qual::argument_type qual) { qual_ = qual; }
   void SetQual(const Qual &qual) { qual_ = qual; }
 
+  const Filters &filters() const { return filters_; }
   bool HasFilter() const { return !filters_.empty(); }
   bool IsPASSing() const;
 
@@ -90,15 +95,17 @@ class VariantContext : public util::HasAttributes, public HasRegion {
 
   friend std::ostream &operator<<(std::ostream &, const VariantContext &);
 
- private:
-  Allele ref_;
-  Alleles alts_;
-
-  // Context Fields
+ public:
+  // VCF-style Context Fields, including INFO attributes
   IDs ids_;
   Qual qual_;
   Filters filters_;
 
+ private:
+  std::underlying_type<Flags>::type flags_;
+
+  Allele ref_;
+  Alleles alts_;
   Genotypes genotypes_;
 
   friend class CompareVariants;
@@ -115,20 +122,6 @@ class CompareVariants {
   result_type operator()(const VariantContext &left, const VariantContext &right) const;
 };
 
-namespace impl {
-struct VariantContextData {
-  VariantContextData() : pos_(0), end_(0), ref_(Allele::MISSING) {}
-
-  Contig contig_;
-  Pos pos_, end_;
-  Allele ref_;
-  VariantContext::Alleles alts_;
-  VariantContext::IDs ids_;
-  VariantContext::Qual qual_;
-  VariantContext::Filters filters_;
-  util::Attributes attrs_;
-};
-}
 template <typename Iterator>
 inline VariantContext::VariantContext(VariantContext &&context, const Contig &contig, Pos pos,
                                       const Allele &ref, Iterator alt_begin, Iterator alt_end)
@@ -138,5 +131,17 @@ inline VariantContext::VariantContext(VariantContext &&context, const Contig &co
   alts_.assign(alt_begin, alt_end);
 }
 
+template <typename Iterator>
+inline VariantContext::VariantContext(const Contig &contig, Pos pos, Pos end, const Allele &ref,
+                                      Iterator alt_begin, Iterator alt_end)
+    : HasRegion(contig, pos, end) {
+  ref_ = ref;
+  alts_.assign(alt_begin, alt_end);
+}
+
+inline VariantContext::Flags operator|(VariantContext::Flags lhs, VariantContext::Flags rhs) {
+  return VariantContext::Flags(std::underlying_type<VariantContext::Flags>::type(lhs) |
+                               std::underlying_type<VariantContext::Flags>::type(rhs));
+}
 }  // namespace model
 }  // namespace aseq
