@@ -1,23 +1,7 @@
 message(STATUS "Configuring for platform Linux/GCC.")
 
-
-# Enable C++11 support
-
 execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
     OUTPUT_VARIABLE GCC_VERSION)
-
-if(GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
-endif()
-
-if(GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-elseif(GCC_VERSION VERSION_EQUAL 4.6)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-endif()
-
 
 set(LINUX_COMPILE_DEFS
     LINUX                     # Linux system
@@ -36,15 +20,16 @@ set(DEFAULT_COMPILE_DEFS_RELEASE
 set(LINUX_COMPILE_FLAGS
       -pthread      # -> use pthread library
     # -no-rtti      # -> disable c++ rtti
-      -pipe         # -> use pipes
-      -Wall         # -> 
-      -Wextra       # -> 
-      -fPIC         # -> use position independent code
+      -pipe
+      -Wall
+      -Wextra
+      -fPIC
       -Wreturn-type 
       -Wfloat-equal 
-      -Wshadow      # -> e.g. when a parameter is named like a member, too many warnings, disabled for now
+      -Wno-shadow
       -Wcast-align 
       -Wconversion
+      -Wno-unused-parameter
 )
 
 set(DEFAULT_COMPILE_FLAGS
@@ -55,11 +40,12 @@ set(DEFAULT_COMPILE_FLAGS
     >
 )
 
+set(LINUX_LINKER_FLAGS 
+	-pthread
+)
+
 set(LINUX_LINKER_FLAGS "-pthread")
 
 set(DEFAULT_LINKER_FLAGS_RELEASE ${LINUX_LINKER_FLAGS})
 set(DEFAULT_LINKER_FLAGS_DEBUG ${LINUX_LINKER_FLAGS})
 set(DEFAULT_LINKER_FLAGS ${LINUX_LINKER_FLAGS})
-
-# Add platform specific libraries for linking
-set(EXTRA_LIBS "")
