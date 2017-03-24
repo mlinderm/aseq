@@ -1,11 +1,8 @@
-# aseq: Another Sequencing Analysis Tool
+## aseq: Another Sequencing Toolkit
 
-### Build on OSX
+A C++-14 client and library for working with VCF files and other kinds of genomic data.
 
-```
-brew install boost glog
-```
+### Development
 
-### Managing vendored dependencies
+Vendored projects managed with `git subtree` as described [here](http://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/).
 
-http://blogs.atlassian.com/2013/05/alternatives-to-git-submodule-git-subtree/
